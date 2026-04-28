@@ -1,0 +1,285 @@
+{
+  "departments": {
+    "road_national_highway": {
+      "problem_category": "Road / Pothole (National Highway)",
+      "official_name": "National Highways Authority of India (NHAI)",
+      "helpline": "1033",
+      "helpline_availability": "Toll-free, 24x7",
+      "portal": "https://rajmargyatra.nhai.gov.in/",
+      "escalation_authority": "General Manager (HR/Admin) or Chief Vigilance Officer (CVO), NHAI",
+      "email": null,
+      "response_days": 30,
+      "relevant_acts": ["RTI Act 2005"],
+      "complaint_template": "road_national_highway.txt",
+      "keywords": ["national highway", "NH", "NHAI", "highway pothole", "toll road", "expressway"]
+    },
+
+    "road_general": {
+      "problem_category": "Road / Pothole (State/Local Road)",
+      "official_name": "Centralized Public Grievance Redress And Monitoring System (CPGRAMS)",
+      "helpline": "UMANG App or nearest CSC",
+      "helpline_availability": "Working hours",
+      "portal": "https://pgportal.gov.in/",
+      "escalation_authority": "Directorate of Public Grievances (DPG), Cabinet Secretariat or Appellate Authority, MoRTH",
+      "email": null,
+      "response_days": 30,
+      "relevant_acts": ["RTI Act 2005"],
+      "complaint_template": "road_general.txt",
+      "keywords": ["pothole", "road damage", "broken road", "street light", "footpath", "municipal road", "state highway"]
+    },
+
+    "electricity": {
+      "problem_category": "Electricity",
+      "official_name": "Electricity Call Centre (Ministry of Power)",
+      "helpline": "1912",
+      "helpline_availability": "Toll-free, 24x7",
+      "portal": "Local utility portal of your state",
+      "escalation_authority": "Consumer Grievance Redressal Forum (CGRF) of your state/utility",
+      "email": null,
+      "response_days": 15,
+      "relevant_acts": ["Electricity Act 2003"],
+      "complaint_template": "electricity.txt",
+      "keywords": ["electricity", "power cut", "load shedding", "high bill", "electric bill", "meter", "transformer", "voltage", "DISCOM", "power supply"]
+    },
+
+    "water_supply_general": {
+      "problem_category": "Water Supply (General / Municipal)",
+      "official_name": "Centralized Public Grievance Redress And Monitoring System (CPGRAMS)",
+      "helpline": "1800-11-4000",
+      "helpline_availability": "National Consumer Helpline or UMANG App",
+      "portal": "https://pgportal.gov.in/",
+      "escalation_authority": "Directorate of Public Grievances (DPG), Cabinet Secretariat",
+      "email": null,
+      "response_days": 30,
+      "relevant_acts": ["RTI Act 2005"],
+      "complaint_template": "water_supply.txt",
+      "keywords": ["water supply", "no water", "dirty water", "water pipeline", "water tank", "water shortage", "tap water", "municipal water"]
+    },
+
+    "water_supply_jal_shakti": {
+      "problem_category": "Water Supply (Jal Jeevan Mission / Rural)",
+      "official_name": "Department of Drinking Water and Sanitation (DDWS) / Central Water Commission",
+      "helpline": "1915",
+      "helpline_availability": "General consumer issues",
+      "portal": "https://ejalshakti.gov.in/",
+      "escalation_authority": "Grievance Officer, Shri Parveen Kumar (Secretary, CWC)",
+      "email": "grievance-cwc@nic.in",
+      "response_days": 30,
+      "relevant_acts": ["RTI Act 2005"],
+      "complaint_template": "water_jal_shakti.txt",
+      "keywords": ["jal jeevan mission", "rural water", "hand pump", "village water supply", "borewell", "drinking water rural"]
+    },
+
+    "ration_pds": {
+      "problem_category": "Ration / PDS (Public Distribution System)",
+      "official_name": "Department of Food and Public Distribution",
+      "helpline": "1967",
+      "helpline_availability": "All-India Toll-Free for PDS",
+      "portal": "https://nfsa.gov.in/public/frmRegisterPublicGrievance.aspx",
+      "escalation_authority": "Senior Economic Advisor (Public Grievances), Ms. Nandita Mishra",
+      "email": "nandita.mishra@nic.in",
+      "response_days": 30,
+      "relevant_acts": ["NFSA 2013"],
+      "complaint_template": "ration_pds.txt",
+      "keywords": ["ration", "ration card", "PDS", "fair price shop", "ration dealer", "food grains", "rice", "wheat subsidy", "BPL", "AAY", "Anna Sahayata"]
+    },
+
+    "police": {
+      "problem_category": "Police / Law Enforcement / Human Rights",
+      "official_name": "National Human Rights Commission, India (NHRC)",
+      "helpline": "14433",
+      "helpline_availability": "Toll-free",
+      "portal": "https://hrcnet.nic.in/",
+      "escalation_authority": "Chairperson/Members of NHRC or Director General (Investigation)",
+      "email": "complaint.nhrc@nic.in",
+      "response_days": 30,
+      "relevant_acts": ["CrPC 1973", "IPC 1860"],
+      "complaint_template": "police.txt",
+      "keywords": ["police", "FIR not registered", "police complaint ignored", "police harassment", "fake case", "police brutality", "law enforcement", "human rights violation"]
+    },
+
+    "property_tax": {
+      "problem_category": "Property Tax / Income Tax",
+      "official_name": "Income Tax Department e-Filing Portal",
+      "helpline": "1800-180-1961",
+      "helpline_availability": "Toll-free for tax evasion",
+      "portal": "https://www.incometax.gov.in/",
+      "escalation_authority": "Commissioner of Income Tax (Appeals)",
+      "email": "webmanager@incometax.gov.in",
+      "response_days": 30,
+      "relevant_acts": ["RTI Act 2005"],
+      "complaint_template": "property_tax.txt",
+      "keywords": ["property tax", "house tax", "tax dispute", "wrong tax", "tax evasion", "municipal tax", "income tax"]
+    },
+
+    "hospital_health": {
+      "problem_category": "Hospital / Healthcare",
+      "official_name": "Mera Aspataal (Ministry of Health & Family Welfare)",
+      "helpline": "1075",
+      "helpline_availability": "National Health Helpline",
+      "portal": "https://nhp.gov.in",
+      "escalation_authority": "Nodal Officer/Grievance Officer of the hospital or Joint Secretary (Hospital Division), MoHFW",
+      "email": "meraaspataal@nhp.gov.in",
+      "response_days": 30,
+      "relevant_acts": ["Clinical Establishments Act 2010", "Consumer Protection Act 2019"],
+      "complaint_template": "hospital_health.txt",
+      "keywords": ["hospital", "doctor", "medical negligence", "health center", "PHC", "government hospital", "medicine", "treatment denied", "ambulance", "health"]
+    },
+
+    "education_higher": {
+      "problem_category": "Education (Higher / University / College)",
+      "official_name": "UGC e-Samadhaan",
+      "helpline": "1800-111-656",
+      "helpline_availability": "24x7 General Queries",
+      "portal": "https://samadhaan.ugc.ac.in/",
+      "escalation_authority": "Ms. Monika, Deputy Secretary (UGC Bureau Head)",
+      "email": "e-samadhan@ugc.gov.in",
+      "response_days": 30,
+      "relevant_acts": ["UGC Act 1956", "RTE Act 2009"],
+      "complaint_template": "education_higher.txt",
+      "keywords": ["university", "college", "UGC", "degree", "admission", "exam", "result", "ragging", "anti-ragging", "scholarship", "hostel", "professor", "faculty"]
+    },
+
+    "education_school": {
+      "problem_category": "Education (School / Primary / Secondary)",
+      "official_name": "Department of School Education & Literacy (DSEL)",
+      "helpline": "011-23383451",
+      "helpline_availability": "General Enquiry",
+      "portal": "https://dsel.education.gov.in/en/feedback-form",
+      "escalation_authority": "Dr. Amarpreet Duggal, Joint Secretary (Coordination & Media Bureau)",
+      "email": "jsad-moe@gov.in",
+      "response_days": 30,
+      "relevant_acts": ["RTE Act 2009"],
+      "complaint_template": "education_school.txt",
+      "keywords": ["school", "primary school", "mid day meal", "teacher absent", "school fee", "RTE admission", "child education", "government school"]
+    },
+
+    "pension": {
+      "problem_category": "Pension",
+      "official_name": "Central Pension Accounting Office (CPAO)",
+      "helpline": "1800-11-77-88",
+      "helpline_availability": "Toll-free",
+      "portal": "https://cpao.nic.in/grievance_sql/Grievance_form_all.php",
+      "escalation_authority": "Chief Controller (Pensions), CPAO",
+      "email": "cccpao@nic.in",
+      "response_days": 30,
+      "relevant_acts": ["Maintenance of Parents Act 2007"],
+      "complaint_template": "pension.txt",
+      "keywords": ["pension", "pension not received", "pension delayed", "retirement", "PPO", "family pension", "pension account", "CPAO", "old age pension"]
+    },
+
+    "land_dispute": {
+      "problem_category": "Land / Property Dispute",
+      "official_name": "Department of Land Resources (DoLR)",
+      "helpline": "011-23062456",
+      "helpline_availability": "Directorate level",
+      "portal": "https://dolr.gov.in/",
+      "escalation_authority": "Shri Narendra Bhooshan, Secretary (Land Resources)",
+      "email": "secy-dolr@nic.in",
+      "response_days": 30,
+      "relevant_acts": ["Land Acquisition Act 2013", "Registration Act 1908"],
+      "complaint_template": "land_dispute.txt",
+      "keywords": ["land dispute", "property dispute", "encroachment", "land record", "khatian", "khatiyan", "mutation", "pattas", "zameen", "land grab", "boundary dispute"]
+    },
+
+    "pollution_general": {
+      "problem_category": "Environmental Pollution",
+      "official_name": "Central Pollution Control Board (CPCB)",
+      "helpline": "1800-11-4725",
+      "helpline_availability": "Toll-free",
+      "portal": "https://cpcb.nic.in/",
+      "escalation_authority": "Member Secretary, CPCB (Dr. Prashant Gargava)",
+      "email": "cpcb@nic.in",
+      "response_days": 30,
+      "relevant_acts": ["Environment Protection Act 1986", "Air Prevention Act 1981", "Water Prevention Act 1974"],
+      "complaint_template": "pollution_general.txt",
+      "keywords": ["pollution", "factory smoke", "industrial waste", "river pollution", "noise pollution", "chemical dumping", "water contamination", "garbage", "waste burning"]
+    },
+
+    "pollution_air": {
+      "problem_category": "Air Pollution (Specific)",
+      "official_name": "SAMEER App (Official CPCB App)",
+      "helpline": "1800-11-4725",
+      "helpline_availability": "Toll-free",
+      "portal": "https://app.cpcbccr.com/ccr/",
+      "escalation_authority": "Nodal Officer (Air Quality Management), CPCB",
+      "email": "cpcb@cpcb.nic.in",
+      "response_days": 30,
+      "relevant_acts": ["Air Prevention Act 1981", "Environment Protection Act 1986"],
+      "complaint_template": "pollution_air.txt",
+      "keywords": ["air pollution", "smoke", "dust", "burning waste", "industrial smoke", "AQI", "smog", "vehicle emission", "stubble burning"]
+    },
+
+    "consumer_fraud": {
+      "problem_category": "Consumer Fraud / Product Deficiency",
+      "official_name": "National Consumer Helpline (NCH), Department of Consumer Affairs",
+      "helpline": "1915",
+      "helpline_availability": "Toll-free, 8 AM to 8 PM",
+      "portal": "https://consumerhelpline.gov.in/",
+      "escalation_authority": "Director (PG), Department of Consumer Affairs",
+      "email": "nch-ca@gov.in",
+      "whatsapp": "8800001915",
+      "response_days": 30,
+      "relevant_acts": ["Consumer Protection Act 2019"],
+      "complaint_template": "consumer_fraud.txt",
+      "keywords": ["consumer fraud", "product defect", "fake product", "overcharging", "deficiency in service", "online shopping fraud", "e-commerce", "warranty", "refund denied"]
+    },
+
+    "banking": {
+      "problem_category": "Banking / Financial",
+      "official_name": "RBI Complaint Management System (CMS)",
+      "helpline": "14448",
+      "helpline_availability": "Toll-free, Multi-lingual",
+      "portal": "https://cms.rbi.org.in",
+      "escalation_authority": "Executive Director-in-charge, Consumer Education and Protection Department (Appellate Authority), RBI",
+      "email": "crpc@rbi.org.in",
+      "response_days": 30,
+      "relevant_acts": ["Banking Regulation Act 1949", "Payment and Settlement Act 2007"],
+      "complaint_template": "banking.txt",
+      "keywords": ["bank", "stuck money", "transaction failed", "ATM", "loan", "EMI", "bank fraud", "account frozen", "cheque bounce", "banking ombudsman", "NEFT", "RTGS", "UPI failed"]
+    },
+
+    "corruption_cvc": {
+      "problem_category": "Corruption / Bribery (Central Govt Employee)",
+      "official_name": "Central Vigilance Commission (CVC)",
+      "helpline": "1964",
+      "helpline_availability": "Toll-free",
+      "portal": "https://portal.cvc.gov.in/",
+      "escalation_authority": "Secretary, Central Vigilance Commission",
+      "email": null,
+      "response_days": 30,
+      "relevant_acts": ["Prevention of Corruption Act 1988"],
+      "complaint_template": "corruption_cvc.txt",
+      "keywords": ["corruption", "bribery", "bribe", "government officer", "central government", "vigilance", "corruption complaint"]
+    },
+
+    "corruption_lokpal": {
+      "problem_category": "Corruption (Ministers / MPs / Senior Officials)",
+      "official_name": "Lokpal of India",
+      "helpline": "011-26125013",
+      "helpline_availability": "Help Desk for filing complaints",
+      "portal": "https://lokpalonline.gov.in/",
+      "escalation_authority": "Secretary or Deputy Registrar, Lokpal of India",
+      "email": "pg-adminofficers@lokpal.gov.in",
+      "response_days": 30,
+      "relevant_acts": ["Lokpal and Lokayuktas Act 2013", "Prevention of Corruption Act 1988", "Whistleblowers Protection Act 2014"],
+      "complaint_template": "corruption_lokpal.txt",
+      "keywords": ["minister", "MP", "MLA", "senior official", "lokpal", "lokayukta", "high level corruption", "whistleblower"]
+    }
+  },
+
+  "universal_portal": {
+    "name": "CPGRAMS — Central Grievance Portal",
+    "portal": "https://pgportal.gov.in/",
+    "use": "Fallback for any complaint not covered above",
+    "helpline": "UMANG App"
+  },
+
+  "metadata": {
+    "version": "1.0",
+    "project": "NyayaVaani",
+    "total_departments": 19,
+    "last_updated": "2026-04-26",
+    "data_source": "india.gov.in, official .gov.in portals"
+  }
+}
