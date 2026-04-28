@@ -12,7 +12,7 @@ from langchain_community.vectorstores import Chroma
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain.schema import Document
 from rank_bm25 import BM25Okapi
-from langchain_groq import ChatGroq
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.prompts import ChatPromptTemplate
 
 from config import config
@@ -132,9 +132,9 @@ class CorrectiveRAG:
 
     def __init__(self):
         self.retriever = HybridRetriever()
-        self.llm = ChatGroq(
+        self.llm = ChatGoogleGenerativeAI(
             model=config.LLM_MODEL,
-            api_key=config.GROQ_API_KEY,
+            google_api_key=config.GOOGLE_API_KEY,
             temperature=0.0  # zero temp for grading — strict factual
         )
         logger.info("CorrectiveRAG initialized")

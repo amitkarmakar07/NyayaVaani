@@ -9,6 +9,7 @@ from typing import Optional, List
 from fastapi import FastAPI, UploadFile, File, HTTPException, Form
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from fastapi.staticfiles import StaticFiles
 from loguru import logger
 
 from src.crew import run_complaint_pipeline, run_followup
@@ -28,6 +29,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"]
 )
+
+# Serve static files from the frontend directory
+app.mount("/frontend", StaticFiles(directory="frontend"), name="frontend")
 
 
 # ─── Request/Response Models ─────────────────────────────────────
@@ -108,9 +112,21 @@ async def process_complaint(request: ComplaintTextRequest):
 
     except Exception as e:
         import traceback
-        logger.error(f"Complaint processing failed: {e}")
+        error_msg = str(e)
+        
+        # Check for quota/rate limit issues in the error message
+        if "RESOURCE_EXHAUSTED" in error_msg or "429" in error_msg:
+            friendly_msg = "The AI service is currently at its quota limit. Please try again in a few minutes or switch API keys."
+            logger.error(f"Quota error: {error_msg}")
+        elif "RetryError" in error_msg:
+            friendly_msg = "The processing pipeline failed after multiple attempts. This usually happens due to API rate limits."
+            logger.error(f"Retry error: {error_msg}")
+        else:
+            friendly_msg = error_msg
+
+        logger.error(f"Complaint processing failed: {error_msg}")
         logger.error(traceback.format_exc())
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=friendly_msg)
 
 
 @app.post("/complaint/followup")
@@ -147,8 +163,14 @@ async def followup_question(request: FollowupRequest):
     except HTTPException:
         raise
     except Exception as e:
+        error_msg = str(e)
+        if "RESOURCE_EXHAUSTED" in error_msg or "429" in error_msg:
+            friendly_msg = "AI quota limit reached. Please try later."
+        else:
+            friendly_msg = error_msg
+            
         logger.error(f"Followup failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=friendly_msg)
 
 
 @app.post("/rag/chat")
@@ -162,8 +184,14 @@ async def rag_chatbot(request: RAGChatRequest):
         result = rag.answer_question(request.question, department=request.department)
         return result
     except Exception as e:
+        error_msg = str(e)
+        if "RESOURCE_EXHAUSTED" in error_msg or "429" in error_msg:
+            friendly_msg = "Legal AI quota limit reached. Please try later."
+        else:
+            friendly_msg = error_msg
+            
         logger.error(f"RAG chat failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=friendly_msg)
 
 
 @app.get("/history/{user_id}")

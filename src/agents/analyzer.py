@@ -5,11 +5,14 @@ Extracts structured complaint data for downstream agents.
 """
 
 from crewai import Agent, Task
-from langchain_groq import ChatGroq
+# from langchain_google_genai import ChatGoogleGenerativeAI # Optional: use if passing object
 from config import config
 
 
 def get_analyzer_agent() -> Agent:
+    # Using string format for LiteLLM (internal to CrewAI) to avoid Pydantic validation errors
+    # model=config.LLM_MODEL is 'gemini-1.5-flash', so we prepend 'gemini/'
+    llm_model = f"gemini/{config.LLM_MODEL}"
 
     return Agent(
         role="Senior Complaint Analyst",
@@ -24,8 +27,7 @@ def get_analyzer_agent() -> Agent:
             "can read between the lines, and extract precise actionable information even from vague inputs. "
             "You know every type of civic problem Indian citizens face."
         ),
-        llm=f"groq/{config.LLM_MODEL}",
-        temperature=0.1,
+        llm=llm_model,
         verbose=True,
         allow_delegation=False,
         max_iter=3

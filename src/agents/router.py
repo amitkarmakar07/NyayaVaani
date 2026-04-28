@@ -7,7 +7,7 @@ Returns both central and state department details.
 import json
 from crewai import Agent, Task
 from crewai.tools import tool
-from langchain_groq import ChatGroq
+# from langchain_google_genai import ChatGoogleGenerativeAI
 from serpapi import GoogleSearch
 from loguru import logger
 from config import config
@@ -103,6 +103,8 @@ STATE_SPECIFIC_DEPARTMENTS = [
 
 
 def get_router_agent() -> Agent:
+    # Using string format for LiteLLM (internal to CrewAI) to avoid Pydantic validation errors
+    llm_model = f"gemini/{config.LLM_MODEL}"
 
     return Agent(
         role="Government Department Router",
@@ -117,8 +119,7 @@ def get_router_agent() -> Agent:
             "central authorities versus state authorities. You always provide accurate, "
             "verified contact details and never guess helpline numbers."
         ),
-        llm=f"groq/{config.LLM_MODEL}",
-        temperature=0.1,
+        llm=llm_model,
         tools=[department_lookup_tool, state_helpline_tool],
         verbose=True,
         allow_delegation=False,

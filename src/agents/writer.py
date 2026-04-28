@@ -5,11 +5,13 @@ Uses complaint analysis + department details + RAG legal context
 """
 
 from crewai import Agent, Task
-from langchain_groq import ChatGroq
+# from langchain_google_genai import ChatGoogleGenerativeAI
 from config import config
 
 
 def get_writer_agent() -> Agent:
+    # Using string format for LiteLLM (internal to CrewAI) to avoid Pydantic validation errors
+    llm_model = f"gemini/{config.LLM_MODEL}"
 
     return Agent(
         role="Professional Legal Communication Writer",
@@ -25,8 +27,7 @@ def get_writer_agent() -> Agent:
             "a complaint, and how to write firmly yet respectfully. Your complaints always "
             "get responses. You write for common citizens who need professional representation."
         ),
-        llm=f"groq/{config.LLM_MODEL}",
-        temperature=0.2,
+        llm=llm_model,
         verbose=True,
         allow_delegation=False,
         max_iter=2

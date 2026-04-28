@@ -6,12 +6,13 @@ Entry point for complaint processing pipeline.
 
 import json
 import re
+import time
 from typing import Dict, Optional
 from loguru import logger
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from crewai import Crew, Process
-from langchain_groq import ChatGroq
+from langchain_google_genai import ChatGoogleGenerativeAI
 
 from src.agents.analyzer import get_analyzer_agent, get_analyzer_task
 from src.agents.router import get_router_agent, get_router_task
@@ -102,6 +103,7 @@ def run_complaint_pipeline(
             verbose=False
         )
         analysis_result = analyzer_crew.kickoff()
+        time.sleep(3)
         analysis_text = str(analysis_result)
         analysis_data = extract_json_from_text(analysis_text)
         logger.success(f"Agent 1 done. Category: {analysis_data.get('department_category', 'unknown')}")
@@ -176,6 +178,7 @@ def run_complaint_pipeline(
             verbose=False
         )
         router_result = router_crew.kickoff()
+        time.sleep(3)
         router_text = str(router_result)
         router_data = extract_json_from_text(router_text)
         logger.success(f"Agent 2 done. Department: {router_data.get('department_name', 'unknown')}")
@@ -251,10 +254,11 @@ def run_followup(
         history_text += f"{role}: {msg['content']}\n"
 
     # Final answer with conversation grounding
-    llm = ChatGroq(
+    llm = ChatGoogleGenerativeAI(
         model=config.LLM_MODEL,
-        api_key=config.GROQ_API_KEY,
-        temperature=0.1
+        google_api_key=config.GOOGLE_API_KEY,
+        temperature=config.LLM_TEMPERATURE,
+        max_tokens=config.LLM_MAX_TOKENS
     )
 
     from langchain.prompts import ChatPromptTemplate
