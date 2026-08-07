@@ -130,16 +130,6 @@ graph TD
    python -m backend.api
    ```
    *Open `http://localhost:8000/frontend/index.html` in your browser.*
-
----
-
-## 🛣️ Future Roadmap
-
-- [ ] **Multi-lingual Support**: Expanding to 12+ regional Indian languages.
-- [ ] **Direct Portal Integration**: One-click submission to CPgrams and State portals.
-- [ ] **AI Video Summaries**: Explaining legal rights via AI-generated video avatars.
-- [ ] **Mobile App**: Dedicated Flutter app for field-use by citizens.
-
 ---
 
 ## ⚖️ License
@@ -151,4 +141,4 @@ Distributed under the MIT License. See `LICENSE` for more information.
 **Amit Karmakar**  
 *Data Science & AI Developer*
 
-[LinkedIn](https://www.linkedin.com/in/amitkarmakar07/) • [Portfolio](https://amitkarmakar.com/) • [GitHub](https://github.com/amitkarmakar07)
+[LinkedIn](https://www.linkedin.com/in/amit-karmakar-355817258/)
