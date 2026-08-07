@@ -1,0 +1,92 @@
+analyzer_task:
+  description: >
+    Analyze the following citizen complaint thoroughly and extract all structured information.
+    
+    CITIZEN COMPLAINT:
+    "{complaint_text}"
+    
+    CITIZEN'S STATE: {user_state}
+    
+    Extract the problem summary, department category, severity, duration, prior complaint details, specific organizations/locations mentioned, financial amounts, citizen impact, and action type (first complaint or escalation). Be precise and do not hallucinate.
+  expected_output: >
+    A valid structured JSON object with all extracted complaint details. Use 'Not mentioned' for missing info.
+
+router_task:
+  description: >
+    Based on the analyzed complaint, find ALL relevant department contact details.
+    
+    CITIZEN'S STATE: {user_state}
+    
+    STEP 1 — Central Department Lookup
+    Use the department lookup tool to get the full central government contact details.
+    
+    STEP 2 — State Department Search
+    If the department requires state-level handling (e.g., electricity, water, police), use the state helpline lookup tool with a query like "{user_state} [department] grievance helpline official".
+    
+    Combine both central and state information into the final structure. Never make up helpline numbers.
+  expected_output: >
+    A structured JSON object containing central and state department details, helplines, portals, and escalation paths.
+
+researcher_task:
+  description: >
+    Find the relevant Indian laws and citizen rights for this complaint.
+    
+    Use the legal RAG tool to search for citizen rights, legal remedies, and applicable laws for this specific type of grievance. If you cannot find specific laws, default to searching for RTI (Right to Information) Act procedures for grievances.
+  expected_output: >
+    A comprehensive summary of the legal context, including specific Act names, sections, and practical citizen rights relevant to the complaint.
+
+writer_task:
+  description: >
+    Write professional complaint communications for a citizen based on the collected data.
+    
+    CITIZEN DETAILS:
+    - Name: {user_name}
+    - Address: {user_address}
+    - State: {user_state}
+    - Contact: {user_contact}
+    
+    1. A formal letter. MUST strictly use line breaks (\n) for formatting. DO NOT use headings like "Introduction:" or "Problem:". Write it as a seamless professional letter. Follow this exact structure:
+       
+       To,
+       [Recipient Authority Name]
+       [Department]
+       [State/City]
+       
+       Subject: [Clear Subject Line]
+       
+       Respected Sir/Madam,
+       
+       [Paragraph 1: Who you are and context]
+       
+       [Paragraph 2: The exact issue]
+       
+       [Paragraph 3: Applicable legal rights based on research]
+       
+       [Paragraph 4: Expected action and consequence]
+       
+       Thanking You,
+       
+       Yours faithfully,
+       [Citizen Name]
+       [Citizen Contact]
+       Place: [City/State]
+       
+    2. An email (concise, action-oriented, with line breaks \n).
+    
+    CRITICAL RULES:
+    1. Base ALL legal references ONLY on the provided legal context.
+    2. Keep tone firm but respectful. Use simple English.
+  expected_output: >
+    A JSON object containing the formal_letter text, an email object (to, subject, body), key legal rights list, and suggested attachments.
+
+social_media_task:
+  description: >
+    Based on the analyzed complaint and severity, draft a highly effective Twitter/X post to escalate the issue.
+    
+    CITIZEN'S STATE: {user_state}
+    
+    STEP 1: Use your tool to find the official Twitter handles for the relevant authorities or ministries (e.g., the specific municipal corporation, department, or police force). STRICTLY DO NOT search for or tag any individuals (like CM, PM, or specific politicians). Use ONLY institutional handles.
+    STEP 2: Draft a tweet (under 280 characters). If severity is High/Critical, make it urgent and demanding action. If Medium/Low, make it a polite request for attention.
+    STEP 3: Ensure you include the found @handles and relevant hashtags.
+  expected_output: >
+    A JSON object that includes the final 'twitter_post' string.

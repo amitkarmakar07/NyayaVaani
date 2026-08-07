@@ -1,8 +1,3 @@
-"""
-FastAPI Backend — NyayaVaani API
-All endpoints for complaint processing, RAG chatbot, history
-"""
-
 import uuid
 import json
 from typing import Optional, List
@@ -10,12 +5,19 @@ from fastapi import FastAPI, UploadFile, File, HTTPException, Form
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from loguru import logger
-
-from src.crew import run_complaint_pipeline, run_followup
+from fastapi import BackgroundTasks
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 from src.rag.retriever import get_rag
+from src.nyayavaani_crew.crew import NyayaVaaniCrew
 from src.voice.whisper_stt import transcribe_audio
 from src.memory.session_memory import save_session, get_session, update_conversation, get_user_history
+
+from config import Config
+from langfuse import observe, propagate_attributes
+from langfuse.langchain import CallbackHandler
 
 app = FastAPI(
     title="NyayaVaani API",
@@ -30,11 +32,12 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
-# Serve static files from the frontend directory
+@app.get("/")
+async def serve_index():
+    return FileResponse("frontend/index.html")
+
 app.mount("/frontend", StaticFiles(directory="frontend"), name="frontend")
 
-
-# ─── Request/Response Models ─────────────────────────────────────
 
 class ComplaintTextRequest(BaseModel):
     complaint_text: str
@@ -53,8 +56,6 @@ class RAGChatRequest(BaseModel):
     question: str
     department: Optional[str] = None
 
-
-# ─── Endpoints ───────────────────────────────────────────────────
 
 @app.get("/health")
 def health_check():
@@ -78,102 +79,148 @@ async def transcribe_voice(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/complaint/process")
-async def process_complaint(request: ComplaintTextRequest):
-    """
-    Main endpoint — process a complaint through all 3 agents.
-    Returns department info + letter + email + SMS.
-    """
+jobs = {}
+
+def process_bg_task(job_id: str, request: ComplaintTextRequest, session_id: str):
     try:
-        session_id = str(uuid.uuid4())
-        logger.info(f"Processing complaint. Session: {session_id}")
+        inputs = {
+            "complaint_text": request.complaint_text,
+            "user_state": request.user_state,
+            "user_name": request.user_name,
+            "user_address": request.user_address,
+            "user_contact": request.user_contact
+        }
+        
+        # Crew execution
+        crew_instance = NyayaVaaniCrew()
+        crew_obj = crew_instance.crew()
+        result = crew_obj.kickoff(inputs=inputs)
+        
+     
+        try:
+            analysis_dict = crew_obj.tasks[0].output.pydantic.model_dump() if getattr(crew_obj.tasks[0].output, "pydantic", None) else {}
+            dept_dict = crew_obj.tasks[1].output.pydantic.model_dump() if getattr(crew_obj.tasks[1].output, "pydantic", None) else {}
+            writer_dict = crew_obj.tasks[3].output.pydantic.model_dump() if getattr(crew_obj.tasks[3].output, "pydantic", None) else {}
+            social_dict = crew_obj.tasks[4].output.pydantic.model_dump() if getattr(crew_obj.tasks[4].output, "pydantic", None) else {}
+            
+            outputs_dict = {**writer_dict, **social_dict}
+        except Exception as e:
+            logger.error(f"Failed to extract pydantic models: {e}")
+            analysis_dict, dept_dict, outputs_dict = {}, {}, {}
 
-        result = run_complaint_pipeline(
-            complaint_text=request.complaint_text,
-            user_state=request.user_state,
-            user_name=request.user_name,
-            user_address=request.user_address,
-            user_contact=request.user_contact
-        )
-
-        # Save to memory
+        final_result = {
+            "analysis": analysis_dict,
+            "department": dept_dict,
+            "outputs": outputs_dict
+        }
+            
         save_session(
             session_id=session_id,
             user_id=request.user_id,
             complaint_text=request.complaint_text,
             state=request.user_state,
-            pipeline_result=result
+            pipeline_result=final_result
         )
-
-        return {
-            "session_id": session_id,
-            **result
-        }
-
-    except Exception as e:
-        import traceback
-        error_msg = str(e)
         
-        # Check for quota/rate limit issues in the error message
-        if "RESOURCE_EXHAUSTED" in error_msg or "429" in error_msg:
-            friendly_msg = "The AI service is currently at its quota limit. Please try again in a few minutes or switch API keys."
-            logger.error(f"Quota error: {error_msg}")
-        elif "RetryError" in error_msg:
-            friendly_msg = "The processing pipeline failed after multiple attempts. This usually happens due to API rate limits."
-            logger.error(f"Retry error: {error_msg}")
-        else:
-            friendly_msg = error_msg
+        jobs[job_id] = {"status": "completed", "result": final_result}
+    except Exception as e:
+        logger.error(f"Job {job_id} failed: {e}")
+        jobs[job_id] = {"status": "error", "error": str(e)}
 
-        logger.error(f"Complaint processing failed: {error_msg}")
-        logger.error(traceback.format_exc())
-        raise HTTPException(status_code=500, detail=friendly_msg)
+@app.post("/complaint/process")
+async def process_complaint(request: ComplaintTextRequest, background_tasks: BackgroundTasks):
+    """
+    Async endpoint — processes complaint in background.
+    """
+    job_id = str(uuid.uuid4())
+    session_id = str(uuid.uuid4())
+    logger.info(f"Accepted job {job_id}. Session: {session_id}")
+    
+    jobs[job_id] = {"status": "processing"}
+    background_tasks.add_task(process_bg_task, job_id, request, session_id)
+    
+    return {"job_id": job_id, "session_id": session_id, "status": "processing"}
+
+@app.get("/complaint/status/{job_id}")
+async def get_job_status(job_id: str):
+    if job_id not in jobs:
+        raise HTTPException(status_code=404, detail="Job not found")
+    return jobs[job_id]
 
 
 @app.post("/complaint/followup")
+@observe(name="followup_question")
 async def followup_question(request: FollowupRequest):
     """Handle follow-up questions with memory context."""
-    try:
-        session = get_session(request.session_id)
-        if not session:
-            raise HTTPException(status_code=404, detail="Session not found")
+    with propagate_attributes(session_id=request.session_id, user_id=request.user_id):
+        try:
+            session = get_session(request.session_id)
+            if not session:
+                raise HTTPException(status_code=404, detail="Session not found")
 
-        conversation = session.get("conversation", [])
+            conversation = session.get("conversation", [])
 
-        # Add user message
-        conversation.append({"role": "user", "content": request.question})
+            conversation.append({"role": "user", "content": request.question})
 
-        # Get answer
-        answer = run_followup(
-            question=request.question,
-            conversation_history=conversation,
-            original_complaint=session
-        )
+            try:
+                llm = ChatGoogleGenerativeAI(model=Config.LLM_MODEL, google_api_key=Config.GOOGLE_API_KEY, temperature=0.7)
+                system_prompt = f"""You are the NyayaVaani Strategy Expert. 
+You help Indian citizens understand their civic grievance, escalation paths, and drafted legal documents.
+Context of their problem:
+State: {session.get('state')}
+Original Complaint: {session.get('complaint_text')}
+Pipeline Analysis: {json.dumps(session.get('pipeline_result', {}))}
 
-        # Add assistant message
-        conversation.append({"role": "assistant", "content": answer})
+STRICT RULES:
+1. If the user asks a question UNRELATED to their complaint or civic/legal issues, you MUST refuse to answer. Do not respond to general knowledge, coding, or casual talk.
+2. Answers must be SHORT and CONCISE, but still provide a proper, direct solution.
+3. DO NOT use any markdown formatting like stars (**), asterisks (*), or hashes (#). Output plain text only.
+"""
+                
+                messages = [SystemMessage(content=system_prompt)]
+                for msg in conversation[:-1]:
+                    if msg["role"] == "user":
+                        messages.append(HumanMessage(content=msg["content"]))
+                    else:
+                        messages.append(AIMessage(content=msg["content"]))
+                
+                messages.append(HumanMessage(content=request.question))
+                
+                langfuse_handler = CallbackHandler()
+                response = llm.invoke(messages, config={"callbacks": [langfuse_handler]})
+                
+                content = response.content
+                if isinstance(content, list):
+                    content = content[0].get("text", "") if len(content) > 0 else str(content)
+                answer = str(content)
+            except Exception as e:
+                logger.error(f"LLM Error in followup: {e}")
+                answer = "Sorry, my AI thought process was interrupted. Could you ask that again?"
 
-        # Save updated conversation
-        update_conversation(request.session_id, conversation)
+            conversation.append({"role": "assistant", "content": answer})
 
-        return {
-            "answer": answer,
-            "session_id": request.session_id
-        }
+            update_conversation(request.session_id, conversation)
 
-    except HTTPException:
-        raise
-    except Exception as e:
-        error_msg = str(e)
-        if "RESOURCE_EXHAUSTED" in error_msg or "429" in error_msg:
-            friendly_msg = "AI quota limit reached. Please try later."
-        else:
-            friendly_msg = error_msg
-            
-        logger.error(f"Followup failed: {e}")
-        raise HTTPException(status_code=500, detail=friendly_msg)
+            return {
+                "answer": answer,
+                "session_id": request.session_id
+            }
+
+        except HTTPException:
+            raise
+        except Exception as e:
+            error_msg = str(e)
+            if "RESOURCE_EXHAUSTED" in error_msg or "429" in error_msg:
+                friendly_msg = "AI quota limit reached. Please try later."
+            else:
+                friendly_msg = error_msg
+                
+            logger.error(f"Followup failed: {e}")
+            raise HTTPException(status_code=500, detail=friendly_msg)
 
 
 @app.post("/rag/chat")
+@observe(name="rag_chatbot")
 async def rag_chatbot(request: RAGChatRequest):
     """
     Standalone RAG chatbot for legal questions.

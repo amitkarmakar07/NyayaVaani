@@ -1,21 +1,20 @@
-"""
-Corrective RAG Retriever — Industry-grade retrieval pipeline
-Uses Hybrid Search (Dense + BM25 Sparse) + Self-correction
-Prevents hallucination via relevance scoring + source grounding
-"""
-
 from typing import List, Dict, Optional, Tuple
 from loguru import logger
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from langchain_community.vectorstores import Chroma
 from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain.schema import Document
+from langchain_core.documents import Document
 from rank_bm25 import BM25Okapi
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain.prompts import ChatPromptTemplate
+from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
+from sentence_transformers import CrossEncoder
+
+from langchain_core.prompts import ChatPromptTemplate
 
 from config import config
+
+from langfuse import observe
+from langfuse.langchain import CallbackHandler
 
 
 class HybridRetriever:
@@ -88,6 +87,7 @@ class HybridRetriever:
         top_indices = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)[:k]
         return [self._bm25_docs[i] for i in top_indices]
 
+    @observe(as_type="span", name="hybrid_search")
     def hybrid_search(
         self,
         query: str,
@@ -100,10 +100,9 @@ class HybridRetriever:
         dense_results = self.dense_search(query, k=k)
         sparse_results = self.sparse_search(query, k=k)
 
-        # RRF scoring
         rrf_scores: Dict[str, float] = {}
         doc_map: Dict[str, Document] = {}
-        rrf_k = 60  # standard RRF constant
+        rrf_k = 60 
 
         for rank, (doc, score) in enumerate(dense_results):
             doc_id = doc.page_content[:100]
@@ -135,69 +134,54 @@ class CorrectiveRAG:
         self.llm = ChatGoogleGenerativeAI(
             model=config.LLM_MODEL,
             google_api_key=config.GOOGLE_API_KEY,
-            temperature=0.0  # zero temp for grading — strict factual
+            temperature=0.0 
         )
-        logger.info("CorrectiveRAG initialized")
-
-    def _grade_chunk_relevance(self, query: str, chunk: str) -> bool:
-        """
-        LLM grades if chunk is relevant to query.
-        Binary yes/no -- filters hallucination sources.
-        """
-        prompt = ChatPromptTemplate.from_messages([
-            ("system", """You are a relevance grader for Indian legal documents used in a citizen grievance system.
-Your job: decide if a document chunk contains information that could help answer the citizen's query.
-
-Rules:
-- Answer ONLY with "yes" or "no"
-- "yes" = chunk contains legal rights, procedures, penalties, or remedies related to the query topic
-- "yes" = chunk defines relevant legal terms, complaint filing procedures, or citizen entitlements applicable to the query
-- "no" = chunk is clearly about a completely different legal topic with no connection
-- When the query is about a civic issue (road, water, electricity etc.) and the chunk describes a general legal mechanism (like RTI, consumer forum, grievance redressal), mark as "yes" because citizens use these mechanisms for civic complaints
-- When in doubt, lean towards "yes" -- it is better to include a marginally relevant chunk than to miss important legal context
-"""),
-            ("human", "Query: {query}\n\nChunk:\n{chunk}\n\nIs this chunk relevant or useful for answering the query? (yes/no):")
-        ])
-
-        try:
-            chain = prompt | self.llm
-            result = chain.invoke({"query": query, "chunk": chunk})
-            return result.content.strip().lower().startswith("yes")
-        except Exception as e:
-            logger.warning(f"Grading failed: {e}, defaulting to True")
-            return True
+        self.cross_encoder = CrossEncoder(config.CROSS_ENCODER_MODEL)
+        logger.info(f"CorrectiveRAG initialized with CrossEncoder: {config.CROSS_ENCODER_MODEL}")
 
     @retry(stop=stop_after_attempt(2), wait=wait_exponential(multiplier=1, min=2, max=6))
+    @observe(as_type="span", name="retrieve_and_grade")
     def retrieve_and_grade(
         self,
         query: str,
         department: Optional[str] = None
     ) -> Dict:
         """
-        Full corrective RAG pipeline.
+        Full corrective RAG pipeline using CrossEncoder reranking.
         Returns graded relevant chunks + confidence.
         """
         logger.info(f"RAG query: {query[:80]}...")
 
-        # Step 1: Hybrid retrieval
         candidates = self.retriever.hybrid_search(query, k=config.TOP_K_RETRIEVAL)
         logger.info(f"Retrieved {len(candidates)} candidate chunks")
 
-        # Step 2: Grade each chunk
+        if not candidates:
+            return {
+                "chunks": [],
+                "confidence": "low",
+                "total_retrieved": 0,
+                "total_relevant": 0
+            }
+
+        # Cross-Encoder Reranking
+        pairs = [[query, doc.page_content] for doc, _ in candidates]
+        scores = self.cross_encoder.predict(pairs)
+
         relevant_chunks = []
-        for doc, score in candidates:
-            is_relevant = self._grade_chunk_relevance(query, doc.page_content)
-            if is_relevant:
-                relevant_chunks.append({
-                    "content": doc.page_content,
-                    "source": doc.metadata.get("act_name", "Unknown Act"),
-                    "page": doc.metadata.get("page_number", "N/A"),
-                    "score": round(score, 3)
-                })
+        for i, (doc, _) in enumerate(candidates):
+            score = float(scores[i])
+            relevant_chunks.append({
+                "content": doc.page_content,
+                "source": doc.metadata.get("act_name", "Unknown Act"),
+                "page": doc.metadata.get("page_number", "N/A"),
+                "score": round(score, 3)
+            })
 
-        logger.info(f"Relevant chunks after grading: {len(relevant_chunks)}/{len(candidates)}")
+        # Sort by cross-encoder score descending
+        relevant_chunks = sorted(relevant_chunks, key=lambda x: x["score"], reverse=True)
 
-        # Step 3: Determine confidence
+        logger.info(f"Relevant chunks after reranking: {len(relevant_chunks)}/{len(candidates)}")
+
         if len(relevant_chunks) >= 2:
             confidence = "high"
         elif len(relevant_chunks) == 1:
@@ -212,6 +196,7 @@ Rules:
             "total_relevant": len(relevant_chunks)
         }
 
+    @observe(as_type="span", name="answer_question")
     def answer_question(self, question: str, department: Optional[str] = None) -> Dict:
         """
         Full RAG answer generation with anti-hallucination.
@@ -222,24 +207,13 @@ Rules:
         confidence = retrieval["confidence"]
 
         if confidence == "low":
-            return {
-                "answer": (
-                    "I could not find specific information about this in the available "
-                    "legal documents. Please consult pgportal.gov.in or a legal advisor "
-                    "for accurate guidance on this matter."
-                ),
-                "sources": [],
-                "confidence": "low",
-                "grounded": False
-            }
+            logger.info("Low confidence in retrieval - allowing LLM to determine response based on context")
 
-        # Build context string
         context = ""
         for i, chunk in enumerate(chunks):
             context += f"\n--- Source {i+1}: {chunk['source']} (Page {chunk['page']}) ---\n"
             context += chunk["content"] + "\n"
 
-        # Answer prompt
         answer_prompt = ChatPromptTemplate.from_messages([
             ("system", """You are NyayaVaani's Legal Assistant — an expert in Indian government laws and citizen rights.
 
@@ -252,6 +226,7 @@ STRICT RULES:
 4. Use simple, clear language a common Indian citizen can understand
 5. Never guess or infer beyond what documents state
 6. If partial info available, share it and note what's missing
+7. EXCEPTION: If the user is just saying hello, offering a greeting, or asking a casual conversational question (e.g., "how are you?"), ignore all the rules above. DO NOT say "This specific detail is not in my documents". Just respond politely and naturally like a normal, friendly assistant.
 
 Response format:
 - Direct answer first
@@ -268,16 +243,21 @@ Provide a clear, grounded answer:""")
         ])
 
         try:
+            langfuse_handler = CallbackHandler()
             chain = answer_prompt | self.llm
             response = chain.invoke({
                 "question": question,
                 "context": context
-            })
+            }, config={"callbacks": [langfuse_handler]})
+
+            content = response.content
+            if isinstance(content, list):
+                content = content[0].get("text", "") if len(content) > 0 else str(content)
 
             sources = list(set([c["source"] for c in chunks]))
 
             return {
-                "answer": response.content,
+                "answer": str(content),
                 "sources": sources,
                 "confidence": confidence,
                 "grounded": True,

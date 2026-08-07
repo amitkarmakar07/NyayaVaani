@@ -1,4 +1,4 @@
-const API_BASE = "http://localhost:8000";
+const API_BASE = "";
 let userId = localStorage.getItem('nyayavani_user_id') || crypto.randomUUID();
 localStorage.setItem('nyayavani_user_id', userId);
 
@@ -6,13 +6,24 @@ let currentSessionId = null;
 let pipelineResult = null;
 let userProfile = JSON.parse(localStorage.getItem('nyayavani_profile')) || null;
 
+// Voice Variables
+let mediaRecorder;
+let audioChunks = [];
+let isRecording = false;
+
 // DOM Elements
 const navLinks = document.querySelectorAll('.nav-links li');
 const tabs = document.querySelectorAll('.tab-content');
 const processBtn = document.getElementById('process-btn');
 const resultsNav = document.getElementById('nav-results');
 
-// Initial Setup
+// Mode Toggles
+const btnTextMode = document.getElementById('btn-text-mode');
+const btnVoiceMode = document.getElementById('btn-voice-mode');
+const textContainer = document.getElementById('text-input-container');
+const voiceContainer = document.getElementById('voice-input-container');
+const voiceTriggerBtn = document.getElementById('voice-trigger-btn');
+
 document.addEventListener('DOMContentLoaded', () => {
     if (userProfile) {
         updateProfileUI();
@@ -29,10 +40,22 @@ document.addEventListener('DOMContentLoaded', () => {
     // Save Profile
     document.getElementById('save-profile-btn').addEventListener('click', saveProfile);
 
+    // Mode Selection
+    if (btnTextMode) btnTextMode.addEventListener('click', () => setInputMode('text'));
+    if (btnVoiceMode) btnVoiceMode.addEventListener('click', () => setInputMode('voice'));
+
+    // Voice Recording
+    if (voiceTriggerBtn) {
+        voiceTriggerBtn.addEventListener('click', toggleRecording);
+    }
+
     // Process Complaint
     processBtn.addEventListener('click', runPipeline);
 
-    // Document Tabs
+    // Default to text mode
+    setInputMode('text');
+
+    // Results Tab Logic
     document.querySelectorAll('.doc-tab').forEach(btn => {
         btn.addEventListener('click', () => {
             document.querySelectorAll('.doc-tab').forEach(b => b.classList.remove('active'));
@@ -41,7 +64,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Dept Tabs
     document.querySelectorAll('.dept-tab').forEach(btn => {
         btn.addEventListener('click', () => {
             document.querySelectorAll('.dept-tab').forEach(b => b.classList.remove('active'));
@@ -50,11 +72,24 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Chat Inputs
+    // Chat
     document.getElementById('send-followup').addEventListener('click', sendFollowup);
     document.getElementById('send-rag').addEventListener('click', sendRagQuery);
     
-    // Sample Questions
+    // Expert Chat Widget Toggle
+    const chatWidgetBtn = document.getElementById('chat-widget-btn');
+    const chatWidgetWindow = document.getElementById('chat-widget-window');
+    const closeChatBtn = document.getElementById('close-chat-btn');
+
+    if (chatWidgetBtn && chatWidgetWindow) {
+        chatWidgetBtn.addEventListener('click', () => {
+            chatWidgetWindow.classList.toggle('widget-hidden');
+        });
+        closeChatBtn.addEventListener('click', () => {
+            chatWidgetWindow.classList.add('widget-hidden');
+        });
+    }
+    
     document.querySelectorAll('.sample-q').forEach(btn => {
         btn.addEventListener('click', () => {
             document.getElementById('rag-input').value = btn.innerText;
@@ -62,10 +97,92 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Actions
     document.getElementById('copy-doc').addEventListener('click', copyDoc);
     document.getElementById('download-doc').addEventListener('click', downloadDoc);
 });
+
+function setInputMode(mode) {
+    if (mode === 'text') {
+        btnTextMode.classList.add('active');
+        btnVoiceMode.classList.remove('active');
+        textContainer.classList.remove('hidden');
+        voiceContainer.classList.add('hidden');
+    } else {
+        btnVoiceMode.classList.add('active');
+        btnTextMode.classList.remove('active');
+        voiceContainer.classList.remove('hidden');
+        textContainer.classList.add('hidden');
+    }
+}
+
+async function toggleRecording() {
+    const statusText = document.getElementById('record-status');
+    const recordingHint = document.getElementById('recording-hint');
+
+    if (!isRecording) {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+            audioChunks = [];
+
+            mediaRecorder.ondataavailable = (event) => {
+                audioChunks.push(event.data);
+            };
+
+            mediaRecorder.onstop = async () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                await uploadAudio(audioBlob);
+            };
+
+            mediaRecorder.start();
+            isRecording = true;
+            voiceTriggerBtn.classList.add('recording');
+            statusText.innerText = "Listening...";
+            recordingHint.innerText = "Click again to stop and transcribe.";
+        } catch (err) {
+            alert("Microphone access denied or not available.");
+        }
+    } else {
+        mediaRecorder.stop();
+        isRecording = false;
+        voiceTriggerBtn.classList.remove('recording');
+        statusText.innerText = "Processing...";
+        recordingHint.innerText = "Sending audio to Whisper AI...";
+    }
+}
+
+async function uploadAudio(blob) {
+    const statusText = document.getElementById('record-status');
+    const recordingHint = document.getElementById('recording-hint');
+    
+    const formData = new FormData();
+    formData.append('audio', blob, 'recording.webm');
+
+    try {
+        const res = await fetch(`${API_BASE}/transcribe`, {
+            method: 'POST',
+            body: formData
+        });
+
+        if (res.ok) {
+            const data = await res.json();
+            const textarea = document.getElementById('complaint_text');
+            textarea.value = (textarea.value + " " + data.text).trim();
+            
+            // Switch back to text mode to show results
+            setInputMode('text');
+            statusText.innerText = "Click the microphone to start speaking";
+            recordingHint.innerText = "Your voice will be transcribed into text automatically.";
+        } else {
+            throw new Error("Transcription failed");
+        }
+    } catch (err) {
+        alert("Error transcribing audio: " + err.message);
+        statusText.innerText = "Click the microphone to start speaking";
+        recordingHint.innerText = "Your voice will be transcribed into text automatically.";
+    }
+}
+
 
 function switchTab(tabId) {
     navLinks.forEach(l => l.classList.remove('active'));
@@ -78,6 +195,15 @@ function switchTab(tabId) {
     if (activeTab) activeTab.classList.add('active');
 
     if (tabId === 'history') loadHistory();
+
+    const widgetContainer = document.querySelector('.floating-chat-container');
+    if (widgetContainer) {
+        if (tabId === 'results') {
+            widgetContainer.style.display = 'flex';
+        } else {
+            widgetContainer.style.display = 'none';
+        }
+    }
 }
 
 function saveProfile() {
@@ -89,7 +215,7 @@ function saveProfile() {
     };
     localStorage.setItem('nyayavani_profile', JSON.stringify(userProfile));
     updateProfileUI();
-    alert('Profile updated successfully!');
+    alert('Profile saved! You can now file a complaint.');
     switchTab('complaint');
 }
 
@@ -98,7 +224,6 @@ function updateProfileUI() {
     document.getElementById('display-state').innerText = userProfile.state;
     document.querySelectorAll('.user-name-span').forEach(el => el.innerText = userProfile.name);
     
-    // Fill inputs if they exist
     if (document.getElementById('user_name')) {
         document.getElementById('user_name').value = userProfile.name;
         document.getElementById('user_state').value = userProfile.state;
@@ -109,10 +234,10 @@ function updateProfileUI() {
 
 async function runPipeline() {
     const text = document.getElementById('complaint_text').value;
-    if (!text.trim()) return alert("Please describe your problem.");
+    if (!text.trim()) return alert("Please provide a description of your problem (type it or use voice).");
 
     if (!userProfile) {
-        alert("Please save your profile in the Dashboard first.");
+        alert("Please complete your profile in the Dashboard first.");
         return switchTab('dashboard');
     }
 
@@ -121,7 +246,27 @@ async function runPipeline() {
 
     processBtn.disabled = true;
     loader.classList.remove('hidden');
-    btnText.innerText = "AI is working...";
+    btnText.innerText = "Analyzing Grievance...";
+
+    const steps = [
+        "✨ Analyzer Agent is analyzing your complaint...",
+        "✨ Support Router Agent is finding government departments...",
+        "✨ Researcher Agent is studying legal acts...",
+        "✨ Writer Agent is drafting your formal letter...",
+        "✨ Social Media Agent is escalating the issue..."
+    ];
+    let stepIndex = 0;
+    const loadingSteps = document.getElementById('loading-steps');
+    const loadingText = document.getElementById('loading-text');
+    loadingSteps.classList.remove('hidden');
+    loadingText.innerText = steps[0];
+
+    const stepInterval = setInterval(() => {
+        stepIndex++;
+        if(stepIndex < steps.length) {
+            loadingText.innerText = steps[stepIndex];
+        }
+    }, 4500);
 
     try {
         const res = await fetch(`${API_BASE}/complaint/process`, {
@@ -139,59 +284,93 @@ async function runPipeline() {
 
         if (!res.ok) throw new Error(await res.text());
 
-        pipelineResult = await res.json();
-        currentSessionId = pipelineResult.session_id;
+        let jobData = await res.json();
+        currentSessionId = jobData.session_id;
+        const currentJobId = jobData.job_id;
 
-        // Unlock Results
+        btnText.innerText = "Analyzing Grievance... (Please wait)";
+        
+        while (jobData.status === "processing") {
+            await new Promise(r => setTimeout(r, 3000));
+            const statusRes = await fetch(`${API_BASE}/complaint/status/${currentJobId}`);
+            if (!statusRes.ok) {
+                const text = await statusRes.text();
+                throw new Error("Server Error: " + text);
+            }
+            jobData = await statusRes.json();
+        }
+
+        if (jobData.status === "error") {
+            throw new Error(jobData.error);
+        }
+
+        if (!jobData.result) {
+            throw new Error("Job completed but result is missing. JobData: " + JSON.stringify(jobData));
+        }
+
+        pipelineResult = jobData.result;
+
         resultsNav.classList.remove('hidden');
         renderResults();
         switchTab('results');
 
     } catch (err) {
-        alert("Error: " + err.message);
+        alert("System Busy: " + err.message);
     } finally {
+        clearInterval(stepInterval);
+        loadingSteps.classList.add('hidden');
         processBtn.disabled = false;
         loader.classList.add('hidden');
-        btnText.innerText = "Analyze & Generate Complaint";
+        btnText.innerText = "Analyze & Generate Action Plan";
     }
 }
 
 function renderResults() {
     const analysis = pipelineResult.analysis;
     const outputs = pipelineResult.outputs;
+    const department = pipelineResult.department;
 
-    document.getElementById('res-category').innerText = (analysis.department_category || "N/A").replace(/_/g, ' ');
+    document.getElementById('res-category').innerText = (analysis.department_category || "N/A").replace(/_/g, ' ').toUpperCase();
     
     const sev = document.getElementById('res-severity');
-    sev.innerText = analysis.severity || "Medium";
+    sev.innerText = (analysis.severity || "Medium").toUpperCase();
     sev.className = `severity-tag severity-${(analysis.severity || 'medium').toLowerCase()}`;
     
-    document.getElementById('res-action').innerText = (analysis.action_type || "Grievance").replace(/_/g, ' ');
+    // Render Escalation Path
+    const escalationContainer = document.getElementById('escalation-path');
+    const path = department.escalation_path || [];
+    escalationContainer.innerHTML = '';
+    if (path.length) {
+        path.forEach((step, index) => {
+            escalationContainer.innerHTML += `
+                <div class="path-step">
+                    <div class="step-num">${index + 1}</div>
+                    <span>${step}</span>
+                </div>
+            `;
+        });
+    } else {
+        escalationContainer.innerHTML = '<p class="text-muted">No specific escalation path found.</p>';
+    }
 
-    // Department
+    // Render Legal Rights
+    const rightsContainer = document.getElementById('legal-rights-list');
+    const rights = outputs.key_legal_rights || [];
+    rightsContainer.innerHTML = '';
+    if (rights.length) {
+        rights.forEach(right => {
+            rightsContainer.innerHTML += `
+                <div class="right-item">
+                    <i class="fa-solid fa-circle-check"></i>
+                    <span>${right}</span>
+                </div>
+            `;
+        });
+    } else {
+        rightsContainer.innerHTML = '<p class="text-muted">General legal rights applicable.</p>';
+    }
+
     renderDepartment('central');
-
-    // Escalation
-    const escList = document.getElementById('escalation-list');
-    escList.innerHTML = '';
-    (pipelineResult.department.escalation_path || []).forEach(step => {
-        const li = document.createElement('li');
-        li.innerText = step;
-        escList.appendChild(li);
-    });
-
-    // Rights
-    const rightsList = document.getElementById('rights-list');
-    rightsList.innerHTML = '';
-    (outputs.key_legal_rights || []).forEach(right => {
-        const div = document.createElement('div');
-        div.className = 'right-item';
-        div.innerHTML = `<strong>✅</strong> ${right}`;
-        rightsList.appendChild(div);
-    });
-    document.getElementById('res-sources').innerText = (pipelineResult.rag_meta.sources || []).join(', ');
-
-    // Document
     renderDocument('letter');
 }
 
@@ -199,13 +378,12 @@ function renderDepartment(type) {
     const dept = pipelineResult.department;
     const data = type === 'central' ? dept.central_details : dept.state_details;
     
-    document.getElementById('dept-name').innerText = type === 'central' ? dept.department_name : (data.organization || "State Dept");
-    document.getElementById('dept-helpline').innerText = data.helpline || "N/A";
-    document.getElementById('dept-email').innerText = data.email || "N/A";
+    document.getElementById('dept-name').innerText = type === 'central' ? dept.department_name : (data.organization || "State Authority");
+    document.getElementById('dept-helpline').innerText = data.helpline || "Contact State Portal";
     
     const portal = document.getElementById('dept-portal');
-    portal.innerText = data.portal && data.portal !== 'N/A' ? "Visit Portal" : "N/A";
-    portal.href = data.portal || "#";
+    portal.href = data.portal && data.portal !== 'N/A' ? data.portal : "#";
+    portal.innerText = data.portal && data.portal !== 'N/A' ? "Visit Official Website" : "Portal Not Available";
 }
 
 function renderDocument(type) {
@@ -217,7 +395,7 @@ function renderDocument(type) {
         const e = outputs.email;
         content = `To: ${e.to}\nSubject: ${e.subject}\n\n${e.body}`;
     } else {
-        content = outputs.sms;
+        content = outputs.twitter_post || "Twitter post generation in progress...";
     }
 
     document.getElementById('doc-content').innerText = content;
@@ -244,7 +422,7 @@ async function sendFollowup() {
         const data = await res.json();
         appendChatMessage('complaint-chat-history', 'bot', data.answer);
     } catch (err) {
-        appendChatMessage('complaint-chat-history', 'bot', "Sorry, I couldn't process that.");
+        appendChatMessage('complaint-chat-history', 'bot', "AI Expert is currently offline.");
     }
 }
 
@@ -265,11 +443,11 @@ async function sendRagQuery() {
         const data = await res.json();
         let answer = data.answer;
         if (data.sources && data.sources.length) {
-            answer += `\n\n📚 *Sources: ${data.sources.join(', ')}*`;
+            answer += `\n\n📚 Legal Sources: ${data.sources.join(', ')}`;
         }
         appendChatMessage('rag-chat-history', 'bot', answer);
     } catch (err) {
-        appendChatMessage('rag-chat-history', 'bot', "I'm having trouble connecting to the legal database.");
+        appendChatMessage('rag-chat-history', 'bot', "Legal Database is unreachable.");
     }
 }
 
@@ -284,7 +462,7 @@ function appendChatMessage(containerId, role, text) {
 
 async function loadHistory() {
     const container = document.getElementById('history-container');
-    container.innerHTML = '<div class="loader"></div>';
+    container.innerHTML = '<div class="loader" style="border-top-color: var(--primary)"></div>';
     
     try {
         const res = await fetch(`${API_BASE}/history/${userId}`);
@@ -292,7 +470,7 @@ async function loadHistory() {
         
         container.innerHTML = '';
         if (!data.history || !data.history.length) {
-            container.innerHTML = '<div class="card"><p>No history found.</p></div>';
+            container.innerHTML = '<div class="card" style="grid-column: 1/-1;"><p>No records found in your complaint box.</p></div>';
             return;
         }
 
@@ -300,10 +478,10 @@ async function loadHistory() {
             const card = document.createElement('div');
             card.className = 'card';
             card.innerHTML = `
-                <h3>${item.category.replace(/_/g, ' ')}</h3>
-                <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">${item.date.slice(0, 10)}</p>
-                <p>${item.complaint_text.slice(0, 100)}...</p>
-                <button class="secondary-btn" style="margin-top:1rem" onclick="viewHistoryItem('${item.session_id}')">View Full Analysis</button>
+                <h3 style="color: var(--primary)">${item.category.replace(/_/g, ' ')}</h3>
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">Submitted on: ${item.date.slice(0, 10)}</p>
+                <p style="color: #475569">${item.complaint_text.slice(0, 120)}...</p>
+                <button class="primary-btn" style="margin-top:1.5rem; padding: 0.8rem;" onclick="viewHistoryItem('${item.session_id}')">View Full Report</button>
             `;
             container.appendChild(card);
         });
@@ -335,6 +513,6 @@ function downloadDoc() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `NyayaVaani_Complaint.txt`;
+    a.download = `NyayaVaani_Grievance_Report.txt`;
     a.click();
 }

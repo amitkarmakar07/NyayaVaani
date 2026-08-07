@@ -22,41 +22,84 @@ st.set_page_config(
 # ─── Custom CSS ──────────────────────────────────────────────────
 st.markdown("""
 <style>
+    /* Main Layout */
+    .stApp {
+        background-color: #ffffff;
+    }
+    
+    /* Header & Branding */
     .main-header {
-        background: linear-gradient(135deg, #1a237e, #283593);
+        background: linear-gradient(135deg, #FF8C00, #FF5722);
         color: white;
-        padding: 1.5rem 2rem;
-        border-radius: 12px;
-        margin-bottom: 1.5rem;
+        padding: 2.5rem 2rem;
+        border-radius: 16px;
+        margin-bottom: 2rem;
         text-align: center;
+        box-shadow: 0 10px 25px -5px rgba(255, 87, 34, 0.2);
     }
+    
+    .nv-title {
+        font-size: 3rem !important;
+        font-weight: 800 !important;
+        background: linear-gradient(90deg, #FF8C00, #FF5722);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 0.5rem;
+    }
+    
+    /* Cards & Components */
     .dept-card {
-        background: #e8f5e9;
-        border-left: 5px solid #2e7d32;
-        padding: 1rem 1.5rem;
-        border-radius: 8px;
-        margin: 0.5rem 0;
+        background: #fff7ed;
+        border-left: 5px solid #FF8C00;
+        padding: 1.5rem;
+        border-radius: 12px;
+        margin: 1rem 0;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
     }
+    
     .rights-card {
-        background: #e3f2fd;
-        border-left: 5px solid #1565c0;
-        padding: 1rem 1.5rem;
-        border-radius: 8px;
-        margin: 0.5rem 0;
+        background: #fdf2f2;
+        border-left: 5px solid #ef4444;
+        padding: 1.5rem;
+        border-radius: 12px;
+        margin: 1rem 0;
     }
-    .output-card {
-        background: #fafafa;
-        border: 1px solid #e0e0e0;
-        padding: 1.2rem;
-        border-radius: 8px;
-        margin: 0.5rem 0;
+    
+    /* Formal Letter Styling (Normal Font) */
+    .letter-box {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        padding: 2.5rem;
+        border-radius: 16px;
+        font-family: 'Inter', 'Segoe UI', Roboto, sans-serif !important;
+        font-size: 1.1rem;
+        line-height: 1.8;
+        color: #1e293b;
+        white-space: pre-wrap;
+        margin-bottom: 1.5rem;
     }
-    .severity-critical { color: #c62828; font-weight: bold; }
-    .severity-high { color: #ef6c00; font-weight: bold; }
-    .severity-medium { color: #f9a825; font-weight: bold; }
-    .severity-low { color: #2e7d32; font-weight: bold; }
-    .chat-user { background: #e3f2fd; padding: 0.7rem; border-radius: 8px; margin: 0.3rem 0; }
-    .chat-bot { background: #f3e5f5; padding: 0.7rem; border-radius: 8px; margin: 0.3rem 0; }
+    
+    .severity-critical { color: #dc2626; font-weight: bold; }
+    .severity-high { color: #ea580c; font-weight: bold; }
+    .severity-medium { color: #f59e0b; font-weight: bold; }
+    .severity-low { color: #16a34a; font-weight: bold; }
+    
+    /* Chat bubbles */
+    .chat-user { 
+        background: #fff7ed; 
+        padding: 1rem; 
+        border-radius: 15px 15px 0 15px; 
+        margin: 0.5rem 0;
+        border: 1px solid #ffedd5;
+        text-align: right;
+    }
+    .chat-bot { 
+        background: #f1f5f9; 
+        padding: 1rem; 
+        border-radius: 15px 15px 15px 0; 
+        margin: 0.5rem 0;
+        border: 1px solid #e2e8f0;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -80,8 +123,7 @@ init_session()
 
 # ─── Sidebar — User Profile ───────────────────────────────────────
 with st.sidebar:
-    st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/5/55/Emblem_of_India.svg/200px-Emblem_of_India.svg.png", width=80)
-    st.title("NyayaVaani ⚖️")
+    st.markdown('<h1 class="nv-title" style="font-size: 2rem !important;">NyayaVaani</h1>', unsafe_allow_html=True)
     st.caption("Naagrik ki awaaz, AI ki taakat")
     st.divider()
 
@@ -128,8 +170,8 @@ with st.sidebar:
 # ─── Header ──────────────────────────────────────────────────────
 st.markdown("""
 <div class="main-header">
-    <h1>⚖️ NyayaVaani</h1>
-    <p style="margin:0; opacity:0.9;">AI-Powered Civic Grievance Assistant for Every Indian Citizen</p>
+    <h1 style="font-size: 3.5rem; font-weight: 900; margin-bottom: 0;">NyayaVaani</h1>
+    <p style="margin:0; opacity:0.9; font-size: 1.2rem;">AI-Powered Civic Grievance Assistant for Every Indian Citizen</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -152,14 +194,20 @@ with tab1:
 
     # Input section
     st.subheader("📢 Tell us your problem")
-    input_method = st.radio("Input method:", ["🎙️ Voice", "⌨️ Type"], horizontal=True)
+    
+    # Large area for input
+    complaint_text = st.text_area(
+        "Describe your problem in detail:",
+        placeholder="Example: My electricity bill is 3 times higher than usual. I complained to WBSEDCL last month but they haven't responded...",
+        height=350,
+        key="main_complaint_input"
+    )
 
-    complaint_text = ""
-
-    if input_method == "🎙️ Voice":
+    # Voice alternative
+    with st.expander("🎙️ Use Voice Instead"):
         st.info("🎙️ Click the mic and speak your complaint in Hindi or English")
         audio = mic_recorder(
-            start_prompt="🎙️ Click to Speak",
+            start_prompt="🎙️ Start Speaking",
             stop_prompt="⏹️ Stop Recording",
             key="complaint_mic"
         )
@@ -170,20 +218,17 @@ with tab1:
                     res = requests.post(f"{API_BASE}/transcribe", files=files, timeout=30)
                     if res.ok:
                         result = res.json()
-                        complaint_text = result.get("text", "")
+                        st.session_state.voice_transcript = result.get("text", "")
                         lang = result.get("language", "unknown")
                         st.success(f"✅ Transcribed ({lang.upper()})")
-                        st.info(f"**Your complaint:** {complaint_text}")
+                        st.info(f"**Transcription:** {st.session_state.voice_transcript}")
+                        if st.button("Use this transcript"):
+                             st.session_state.main_complaint_input = st.session_state.voice_transcript
+                             st.rerun()
                     else:
                         st.error("Transcription failed. Try typing instead.")
                 except Exception as e:
                     st.error(f"Error: {e}")
-    else:
-        complaint_text = st.text_area(
-            "Describe your problem in detail:",
-            placeholder="Example: My electricity bill is 3 times higher than usual. I complained to WBSEDCL last month but they haven't responded...",
-            height=120
-        )
 
     # Process button
     if st.button("🚀 Find My Rights & Generate Complaint", type="primary", use_container_width=True):
@@ -308,7 +353,7 @@ with tab1:
 
         with out_tab1:
             letter = outputs.get("formal_letter", "Not generated")
-            st.text_area("Formal Letter (Ready to Print & Submit)", letter, height=400)
+            st.markdown(f'<div class="letter-box">{letter}</div>', unsafe_allow_html=True)
             st.download_button(
                 "⬇️ Download Letter as TXT",
                 data=letter,
@@ -370,7 +415,7 @@ with tab1:
                                 "question": followup_q,
                                 "user_id": st.session_state.user_id
                             },
-                            timeout=60
+                            timeout=180
                         )
                         if res.ok:
                             answer = res.json().get("answer", "")
@@ -423,7 +468,7 @@ with tab2:
                 res = requests.post(
                     f"{API_BASE}/rag/chat",
                     json={"question": rag_question},
-                    timeout=60
+                    timeout=180
                 )
                 if res.ok:
                     data = res.json()
@@ -456,7 +501,7 @@ with tab2:
                 st.session_state.rag_history.append({"role": "user", "content": q})
                 with st.spinner("Searching..."):
                     try:
-                        res = requests.post(f"{API_BASE}/rag/chat", json={"question": q}, timeout=60)
+                        res = requests.post(f"{API_BASE}/rag/chat", json={"question": q}, timeout=180)
                         if res.ok:
                             data = res.json()
                             st.session_state.rag_history.append({
