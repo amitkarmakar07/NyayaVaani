@@ -251,9 +251,9 @@ DRAFTED COMPLAINT DOCUMENTS & LEGAL RIGHTS:
 RESPONSE & FORMATTING RULES:
 1. Provide clear, accurate, and direct answers using the problem context and statutory legal documents above.
 2. If the user asks for next steps, helplines, or who to contact, provide the exact department names, phone numbers, email addresses, or official portals from the context.
-3. If legal rights or acts apply, cite the exact statutory act and section inline.
-4. Keep answers concise and practical. Avoid unnecessary filler.
-5. Bold key terms (2-4 words max). Use numbered lists for steps and bullet points for options.
+3. If the user asks to refine, edit, rewrite, shorten, or format the complaint letter, email, or tweet, provide the updated/refined version directly.
+4. If legal rights or acts apply, cite the exact statutory act and section inline.
+5. Keep answers concise and practical. Bold key terms (2-4 words max). Use numbered lists for steps.
 """
             llm = ChatOpenAI(model="gpt-4o-mini", api_key=Config.OPENAI_API_KEY, temperature=0.7)
             
@@ -342,13 +342,15 @@ ACTIVE CITIZEN CASE FILE & COMPLAINT DETAILS:
 - Key Legal Rights Identified: {', '.join(outputs.get('key_legal_rights', []))}
 """
 
-        # Detect conversational / personal / case file questions
+        # Detect conversational / personal / case file / next step questions
         conversational_keywords = [
             "hello", "hi ", "hey ", "namaste", "good morning", "good evening",
             "how are you", "what is your name", "who are you", "what can you do",
             "my name is", "what is my name", "tell me about yourself",
             "thank you", "thanks", "bye", "goodbye", "what is my problem", "my problem",
-            "my case", "my complaint", "what issue", "what did i report"
+            "my case", "my complaint", "what issue", "what did i report",
+            "what to do next", "what are my next steps", "next step", "what next",
+            "what should i do", "how to proceed", "guidance", "where to submit"
         ]
         question_lower = request.question.lower().strip()
         is_conversational = any(kw in question_lower for kw in conversational_keywords)
@@ -370,14 +372,13 @@ ACTIVE CITIZEN CASE FILE & COMPLAINT DETAILS:
 You remember conversation history and have access to the citizen's active complaint case file.
 
 FORMATTING RULES:
-1. If the citizen asks about their problem, case file, or reported complaint (e.g. "what is my problem?", "summarize my case"): use the ACTIVE CITIZEN CASE FILE & COMPLAINT DETAILS below to answer directly, empathetically, and accurately.
+1. If the citizen asks about their problem, case file, or next steps (e.g. "what to do next?", "what is my problem?", "summarize my case"): use the ACTIVE CITIZEN CASE FILE & COMPLAINT DETAILS below to give clear, actionable, step-by-step guidance.
 2. For legal questions: use information from the provided document excerpts and cite the Act name and section number inline.
 3. Use simple language a common Indian citizen can understand.
-4. Structure: provide a short, direct answer first, followed by a compact list if details or options are needed.
-5. Do NOT include any "Next Step" section or sentence at the end. End directly after providing the answer.
-6. Bold only key legal terms or time limits (2-4 words max). Do NOT bold full sentences.
-7. For greetings or personal questions: respond naturally and conversationally without legal citations.
-8. If legal information is not in the provided documents and no active case file matches, say: "This detail is not in my documents. Please verify at the official government portal."
+4. Structure: provide a short, direct answer first, followed by a compact list of next action steps if needed.
+5. Bold key terms (2-4 words max). Do NOT bold full sentences.
+6. For greetings or personal questions: respond naturally and conversationally without legal citations.
+7. If no active case file is found and legal information is missing, invite the user to file a complaint or ask a specific legal query.
 {complaint_context}
 """
 
