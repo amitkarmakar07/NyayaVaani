@@ -2,8 +2,8 @@ const API_BASE = "";
 let userId = localStorage.getItem('nyayavani_user_id') || crypto.randomUUID();
 localStorage.setItem('nyayavani_user_id', userId);
 
-let currentSessionId = null;
-let ragSessionId = localStorage.getItem('nyayavani_rag_session') || null;
+let currentSessionId = localStorage.getItem('nyayavani_current_session') || null;
+let ragSessionId = localStorage.getItem('nyayavani_rag_session') || currentSessionId;
 let pipelineResult = null;
 let userProfile = JSON.parse(localStorage.getItem('nyayavani_profile')) || null;
 
@@ -365,6 +365,9 @@ async function runPipeline() {
 
         let jobData = await res.json();
         currentSessionId = jobData.session_id;
+        ragSessionId = jobData.session_id;
+        localStorage.setItem('nyayavani_current_session', currentSessionId);
+        localStorage.setItem('nyayavani_rag_session', ragSessionId);
         const currentJobId = jobData.job_id;
         
         while (jobData.status === "processing") {
@@ -589,10 +592,11 @@ async function sendRagQuery() {
     chatHistory.appendChild(botMessageDiv);
 
     try {
+        const effectiveSession = currentSessionId || ragSessionId;
         const res = await fetch(`${API_BASE}/rag/chat`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ question: text, session_id: ragSessionId })
+            body: JSON.stringify({ question: text, session_id: effectiveSession })
         });
 
         const reader = res.body.getReader();
@@ -628,10 +632,11 @@ async function sendTabRagQuery() {
     chatHistory.appendChild(botMessageDiv);
 
     try {
+        const effectiveSession = currentSessionId || ragSessionId;
         const res = await fetch(`${API_BASE}/rag/chat`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ question: text, session_id: ragSessionId })
+            body: JSON.stringify({ question: text, session_id: effectiveSession })
         });
 
         const reader = res.body.getReader();
