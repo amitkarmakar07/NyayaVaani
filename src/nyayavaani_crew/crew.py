@@ -4,9 +4,28 @@ from src.nyayavaani_crew.tools import state_helpline_tool, department_lookup_too
 from src.nyayavaani_crew.schemas import AnalyzerOutput, RouterOutput, WriterOutput, SocialMediaOutput
 from crewai import LLM
 from config import Config
+from src.telemetry import setup_telemetry
+import os
+
+os.environ["CREWAI_TELEMETRY_OPT_OUT"] = "true"
+setup_telemetry()
 
 def get_llm():
-    return LLM(model=f"gemini/{Config.LLM_MODEL}", api_key=Config.GOOGLE_API_KEY, temperature=0.5)
+    model = Config.LLM_MODEL
+    if "groq" in model.lower() or "llama" in model.lower():
+        api_key = Config.GROQ_API_KEY
+        if not model.startswith("groq/"):
+            model = f"groq/{model}"
+    else:
+        api_key = Config.GOOGLE_API_KEY
+        if not model.startswith("gemini/"):
+            model = f"gemini/{model}"
+
+    return LLM(
+        model=model,
+        api_key=api_key,
+        temperature=0.3
+    )
 
 @CrewBase
 class NyayaVaaniCrew:
@@ -60,6 +79,7 @@ class NyayaVaaniCrew:
             verbose=True
         )
 
+
     # --- TASKS ---
 
     @task
@@ -75,6 +95,7 @@ class NyayaVaaniCrew:
         return Task(
             config=self.tasks_config['router_task'],
             agent=self.router_agent(),
+            context=[self.analyzer_task()],
             output_pydantic=RouterOutput
         )
 
@@ -82,7 +103,8 @@ class NyayaVaaniCrew:
     def researcher_task(self) -> Task:
         return Task(
             config=self.tasks_config['researcher_task'],
-            agent=self.researcher_agent()
+            agent=self.researcher_agent(),
+            context=[self.analyzer_task()]
         )
 
     @task
@@ -90,6 +112,7 @@ class NyayaVaaniCrew:
         return Task(
             config=self.tasks_config['writer_task'],
             agent=self.writer_agent(),
+            context=[self.analyzer_task(), self.router_task(), self.researcher_task()],
             output_pydantic=WriterOutput
         )
 
@@ -98,6 +121,7 @@ class NyayaVaaniCrew:
         return Task(
             config=self.tasks_config['social_media_task'],
             agent=self.social_media_agent(),
+            context=[self.analyzer_task(), self.router_task()],
             output_pydantic=SocialMediaOutput
         )
 
@@ -109,5 +133,6 @@ class NyayaVaaniCrew:
             agents=self.agents,
             tasks=self.tasks,
             process=Process.sequential,
+            max_rpm=8,
             verbose=True
         )

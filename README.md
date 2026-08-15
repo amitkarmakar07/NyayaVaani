@@ -10,7 +10,7 @@
 [![Whisper](https://img.shields.io/badge/OpenAI%20Whisper-V3-black?logo=openai&logoColor=white)](https://openai.com/research/whisper)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**NyayaVaani** (Voice of Justice) is an advanced multimodal AI platform designed to bridge the gap between Indian citizens and the government by automating civic grievance redressal and legal awareness through **Agentic AI** and **Corrective RAG**.
+**NyayaVaani** (Voice of Justice) is an advanced multimodal AI platform designed to bridge the gap between Indian citizens and the government by automating civic grievance redressal and legal awareness through **Agentic AI** and **Hybrid Legal RAG**.
 
 [Explore Demo](#-installation--setup) • [Features](#-key-features) • [Architecture](#-system-architecture) • [Roadmap](#-future-roadmap)
 
@@ -44,10 +44,10 @@ Unlike traditional chatbots, NyayaVaani uses a **collaborative agentic workflow*
 - **Department Scout**: Performs real-time research to find Central/State authorities and active helplines.
 - **Document Architect**: Drafts legally-grounded Letters, Emails, and SMS alerts.
 
-### 📚 Corrective RAG (CRAG)
+### 📚 Hybrid Legal RAG
 A high-accuracy legal knowledge base that prevents hallucinations:
 - **Hybrid Search**: Semantic similarity (Dense) combined with keyword matching (BM25 Sparse).
-- **Self-Grading**: Every retrieved chunk is graded for relevance by an LLM before being used.
+- **Cross-Encoder Reranking**: Every retrieved chunk is reranked and graded for relevance before being used.
 - **Strict Grounding**: Citations from Indian Statutes are provided for every legal answer.
 
 ### 🎙️ Multimodal Accessibility
@@ -76,10 +76,10 @@ graph TD
         E2 --> E3[Document Architect]
     end
     
-    D --> F[Corrective RAG Pipeline]
-    subgraph "CRAG"
+    D --> F[Hybrid Legal RAG Pipeline]
+    subgraph "Hybrid Legal RAG"
         F --> F1[Hybrid Search: ChromaDB + BM25]
-        F1 --> F2[LLM Relevance Grader]
+        F1 --> F2[Cross-Encoder Reranker]
         F2 --> F3[Source Grounded Generation]
     end
     

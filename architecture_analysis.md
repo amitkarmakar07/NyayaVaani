@@ -1,6 +1,6 @@
 # Codebase & Architecture Analysis
 
-I have thoroughly reviewed the file structure, system architecture, and specifically the CrewAI implementation in the NyayaVaani project. While the concept (Agentic Civic Assistant + Corrective RAG) is excellent, there are several significant architectural flaws that prevent this from being a production-ready, industry-level application.
+I have thoroughly reviewed the file structure, system architecture, and specifically the CrewAI implementation in the NyayaVaani project. While the concept (Agentic Civic Assistant + Hybrid Legal RAG) is excellent, there are several significant architectural flaws that prevent this from being a production-ready, industry-level application.
 
 Here is a comprehensive breakdown of the current flaws and how to upgrade them for a production environment.
 
@@ -32,7 +32,7 @@ CrewAI natively supports **Pydantic Structured Outputs**. By defining a Pydantic
 Currently, RAG is called procedurally in `crew.py` between Agent 1 and Agent 2. I noticed an empty file: `src/agents/researcher.py`.
 **Why it's bad:** Hardcoding the RAG step limits the system's flexibility. If an agent needs to look up something *during* writing, it cannot.
 **✅ Production Upgrade:**
-Flesh out `researcher.py` to create a `LegalResearcher` Agent. Convert your `CorrectiveRAG` methods into a `Tool` (using CrewAI's `@tool` decorator). Assign this tool to the Researcher or Writer agent so they can autonomously query Indian law whenever they need it.
+Flesh out `researcher.py` to create a `LegalResearcher` Agent. Convert your `LegalRAGPipeline` methods into a `Tool` (using CrewAI's `@tool` decorator). Assign this tool to the Researcher or Writer agent so they can autonomously query Indian law whenever they need it.
 
 ---
 

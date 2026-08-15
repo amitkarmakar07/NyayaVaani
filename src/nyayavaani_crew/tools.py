@@ -41,7 +41,9 @@ def department_lookup_tool(category: str) -> str:
     try:
 
         base_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-        json_path = os.path.join(base_dir, "data", "departments.json")
+        json_path = os.path.join(base_dir, "Data", "departments.json")
+        if not os.path.exists(json_path):
+            json_path = os.path.join(base_dir, "data", "departments.json")
         
         with open(json_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
@@ -70,12 +72,12 @@ def legal_rag_tool(query: str) -> str:
     """Useful for finding Indian laws, legal rights, and acts relevant to a citizen's complaint.
     Pass a description of the problem to search the vector database for applicable laws."""
     rag = get_rag()
-    # CorrectiveRAG retrieves documents and grades them for relevance
     try:
-        results = rag.retrieve_and_grade(query)
+        results = rag.retrieve_and_rerank(query)
         chunks = results.get("chunks", [])
         if not chunks:
             return "No specific legal acts found. Advise using the Right to Information (RTI) Act, 2005 for general grievances."
-        return "\n\n".join([chunk["content"] for chunk in chunks])
+        # Return top 2 chunks trimmed to preserve token quota
+        return "\n\n".join([chunk["content"][:450] for chunk in chunks[:2]])
     except Exception as e:
         return f"Error retrieving legal info: {e}. Default to RTI Act."

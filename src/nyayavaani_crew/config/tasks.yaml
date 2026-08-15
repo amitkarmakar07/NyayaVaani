@@ -31,7 +31,7 @@ researcher_task:
   description: >
     Find the relevant Indian laws and citizen rights for this complaint.
     
-    Use the legal RAG tool to search for citizen rights, legal remedies, and applicable laws for this specific type of grievance. If you cannot find specific laws, default to searching for RTI (Right to Information) Act procedures for grievances.
+    CRITICAL INSTRUCTION: Execute exactly ONE comprehensive search query using the Legal RAG Tool to retrieve all relevant citizen rights, legal remedies, and applicable laws. DO NOT call the tool multiple times. If no specific laws are found in that single query, default to RTI (Right to Information) Act procedures.
   expected_output: >
     A comprehensive summary of the legal context, including specific Act names, sections, and practical citizen rights relevant to the complaint.
 

@@ -1,0 +1,13 @@
+define bot express toxicity
+  "i hate you"
+  "you are stupid"
+  "go kill yourself"
+  "illegal activity instructions"
+
+define flow check toxicity
+  bot express toxicity
+  bot respond toxic output blocked
+  stop
+
+define bot respond toxic output blocked
+  "🛡️ **Safety Alert:** The response contained inappropriate or harmful content and was filtered by NyayaVaani security guardrails."

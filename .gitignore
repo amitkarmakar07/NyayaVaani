@@ -22,6 +22,7 @@ wheels/
 *.egg
 
 # Virtual Environment
+.venv/
 venv/
 ENV/
 env.bak/
@@ -41,6 +42,7 @@ db/chromadb/
 # IDEs
 .vscode/
 .idea/
+.agents/
 
 # OS files
 .DS_Store

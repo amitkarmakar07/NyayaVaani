@@ -6,7 +6,8 @@ load_dotenv(override=True)
 class Config:
     
     GOOGLE_API_KEY: str = os.getenv("GOOGLE_API_KEY", "")
-    LLM_MODEL: str = "gemini-flash-lite-latest"
+    GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")
+    LLM_MODEL: str = os.getenv("LLM_MODEL", "gemini/gemini-3.5-flash")
     LLM_TEMPERATURE: float = 0.1
     LLM_MAX_TOKENS: int = 2048
 

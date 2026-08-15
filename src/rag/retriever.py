@@ -54,8 +54,6 @@ class HybridRetriever:
         """Semantic dense search via ChromaDB."""
         try:
             where_filter = None
-            # ChromaDB metadata filter if department known
-            # (skipped here as departments stored as JSON string)
 
             results = self.vectorstore.similarity_search_with_relevance_scores(
                 query=query,
@@ -69,7 +67,6 @@ class HybridRetriever:
     def sparse_search(self, query: str, k: int = config.TOP_K_RETRIEVAL) -> List[Document]:
         """BM25 keyword search — good for section numbers, act names."""
         if self._bm25_index is None:
-            # Lazy load all docs for BM25
             all_docs = self.vectorstore.get()
             if not all_docs or not all_docs.get("documents"):
                 return []
@@ -119,14 +116,13 @@ class HybridRetriever:
         return [(doc_map[doc_id], rrf_scores[doc_id]) for doc_id in sorted_ids]
 
 
-class CorrectiveRAG:
+class LegalRAGPipeline:
     """
-    Corrective RAG pipeline.
-    1. Retrieve candidates
-    2. Grade relevance of each chunk
+    Hybrid Legal RAG pipeline (Dense + BM25 Sparse Search + Cross-Encoder Reranking).
+    1. Retrieve candidates via Hybrid Search (Dense ChromaDB + BM25 Sparse)
+    2. Grade relevance of each chunk with Cross-Encoder
     3. Filter out irrelevant chunks (prevents hallucination)
-    4. If too few relevant chunks → web fallback with disclaimer
-    5. Generate grounded answer
+    4. Generate grounded answer
     """
 
     def __init__(self):
@@ -137,17 +133,17 @@ class CorrectiveRAG:
             temperature=0.0 
         )
         self.cross_encoder = CrossEncoder(config.CROSS_ENCODER_MODEL)
-        logger.info(f"CorrectiveRAG initialized with CrossEncoder: {config.CROSS_ENCODER_MODEL}")
+        logger.info(f"LegalRAGPipeline initialized with CrossEncoder: {config.CROSS_ENCODER_MODEL}")
 
     @retry(stop=stop_after_attempt(2), wait=wait_exponential(multiplier=1, min=2, max=6))
-    @observe(as_type="span", name="retrieve_and_grade")
-    def retrieve_and_grade(
+    @observe(as_type="span", name="retrieve_and_rerank")
+    def retrieve_and_rerank(
         self,
         query: str,
         department: Optional[str] = None
     ) -> Dict:
         """
-        Full corrective RAG pipeline using CrossEncoder reranking.
+        Full Hybrid Legal RAG pipeline using CrossEncoder reranking.
         Returns graded relevant chunks + confidence.
         """
         logger.info(f"RAG query: {query[:80]}...")
@@ -196,13 +192,15 @@ class CorrectiveRAG:
             "total_relevant": len(relevant_chunks)
         }
 
+    # Alias for backward compatibility
+    retrieve_and_grade = retrieve_and_rerank
+
     @observe(as_type="span", name="answer_question")
     def answer_question(self, question: str, department: Optional[str] = None) -> Dict:
         """
         Full RAG answer generation with anti-hallucination.
-        Used by: RAG Chatbot tab in frontend.
         """
-        retrieval = self.retrieve_and_grade(question, department)
+        retrieval = self.retrieve_and_rerank(question, department)
         chunks = retrieval["chunks"]
         confidence = retrieval["confidence"]
 
@@ -261,7 +259,9 @@ Provide a clear, grounded answer:""")
                 "sources": sources,
                 "confidence": confidence,
                 "grounded": True,
-                "chunks_used": len(chunks)
+                "chunks_used": len(chunks),
+                "chunks": chunks,
+                "context": context
             }
 
         except Exception as e:
@@ -274,11 +274,10 @@ Provide a clear, grounded answer:""")
             }
 
 
-# Singleton instance
 _rag_instance = None
 
-def get_rag() -> CorrectiveRAG:
+def get_rag() -> LegalRAGPipeline:
     global _rag_instance
     if _rag_instance is None:
-        _rag_instance = CorrectiveRAG()
+        _rag_instance = LegalRAGPipeline()
     return _rag_instance

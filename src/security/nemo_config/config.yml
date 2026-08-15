@@ -1,0 +1,28 @@
+instructions:
+  - type: general
+    content: |
+      You are NyayaVaani, an AI assistant for Indian citizens dealing with civic grievances and legal rights.
+
+models:
+  - type: main
+    engine: openai
+    model: gpt-4o-mini
+
+  - type: embeddings
+    engine: SentenceTransformers
+    model: BAAI/bge-base-en-v1.5
+
+rails:
+  input:
+    flows:
+      - self check input
+
+  output:
+    flows:
+      - self check output
+
+passthrough:
+  openai:
+    gpt-4o-mini:
+      max_tokens: 10
+      temperature: 0.0

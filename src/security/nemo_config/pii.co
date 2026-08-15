@@ -1,0 +1,13 @@
+define user provide pii
+  "my aadhaar number is 2345 6789 0123"
+  "here is my pan card ABCDE1234F"
+  "my phone number is 9876543210"
+  "my email is test@example.com"
+
+define flow check pii
+  user provide pii
+  bot respond pii warning
+  stop
+
+define bot respond pii warning
+  "🛡️ **Security Alert (Personal Information Detected):** We detected sensitive details (Aadhaar/PAN/Phone/Email) in your query. For your privacy, please do not share personal identification or contact details."

@@ -1,0 +1,15 @@
+define user ask off topic
+  "write a python script for snake game"
+  "who won the cricket world cup"
+  "tell me a recipe for biryani"
+  "what is the capital of France"
+  "write me a song about space"
+  "how to build a website in react"
+
+define flow check off topic
+  user ask off topic
+  bot respond off topic
+  stop
+
+define bot respond off topic
+  "I am NyayaVaani, your Indian civic and legal grievance assistant. I can only assist with civic complaints, local municipal procedures, legal rights, and Indian acts."

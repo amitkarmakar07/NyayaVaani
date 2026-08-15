@@ -3,77 +3,92 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NyayaVaani | AI Civic Assistant</title>
+    <title>NyayaVaani | Secure Civic Case Filing System</title>
     <link rel="stylesheet" href="/frontend/style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+Devanagari:wght@600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
-    <div class="app-container">
-        <!-- Sidebar Navigation -->
-        <nav class="sidebar">
-            <div class="logo">
-                <i class="fa-solid fa-scale-balanced"></i>
-                <span class="gradient-text">NyayaVaani</span>
-            </div>
-            
-            <ul class="nav-links">
-                <li class="active" data-tab="dashboard">
-                    <i class="fa-solid fa-id-badge"></i>
-                    <span>Citizen Profile</span>
-                </li>
-                <li data-tab="complaint">
-                    <i class="fa-solid fa-pen-nib"></i>
-                    <span>File Grievance</span>
-                </li>
-                <li data-tab="results" id="nav-results" class="hidden">
-                    <i class="fa-solid fa-chart-pie"></i>
-                    <span>AI Analysis</span>
-                </li>
-                <li data-tab="legal-rag">
-                    <i class="fa-solid fa-book-open-reader"></i>
-                    <span>Legal Chatbot</span>
-                </li>
-                <li data-tab="history">
-                    <i class="fa-solid fa-folder-open"></i>
-                    <span>My History</span>
-                </li>
-            </ul>
 
-            <div class="sidebar-footer">
-                <div class="user-profile">
-                    <div class="avatar">
-                        <i class="fa-solid fa-user-shield"></i>
-                    </div>
-                    <div class="user-info">
-                        <span id="display-name">Guest Citizen</span>
-                        <span id="display-state">India</span>
-                    </div>
+    <!-- Ambient Fixed Background Layer (Vibrant Saffron Top-Left, Off-White Center, Vibrant Green Bottom-Right) -->
+    <div class="ambient-bg-layer">
+        <div class="ambient-saffron"></div>
+        <div class="ambient-white"></div>
+        <div class="ambient-green"></div>
+        <div class="security-paper-texture"></div>
+    </div>
+
+    <!-- Centered Master Layout Column (~85% viewport width) -->
+    <div class="master-container">
+        
+        <!-- Sticky Glass Navbar (64px) -->
+        <header class="navbar-glass">
+            <div class="brand-lockup">
+                <i class="fa-solid fa-scale-balanced logo-icon"></i>
+                <div class="wordmark-container">
+                    <span class="wordmark-devanagari font-devanagari">न्यायवाणी</span>
+                    <span class="wordmark-sub font-mono">NyayaVaani</span>
                 </div>
             </div>
-        </nav>
 
-        <!-- Main Content Area -->
-        <main class="content">
+            <!-- Main Pill Navigation -->
+            <nav class="nav-center">
+                <ul class="nav-pills-group">
+                    <li class="nav-pill active" data-tab="complaint"><i class="fa-solid fa-pen-nib"></i> Grievance Analysis</li>
+                    <li class="nav-pill hidden" id="nav-results" data-tab="results"><i class="fa-solid fa-folder-open"></i> Case File Results</li>
+                    <li class="nav-pill" data-tab="rag"><i class="fa-solid fa-comments"></i> Legal Chatbot</li>
+                    <li class="nav-pill" data-tab="history"><i class="fa-solid fa-clock-rotate-left"></i> Previous Cases</li>
+                    <li class="nav-pill" data-tab="dashboard"><i class="fa-solid fa-user-shield"></i> Citizen Profile</li>
+                </ul>
+            </nav>
+
+            <div class="nav-right-controls">
+                <button id="theme-toggle-btn" class="theme-toggle-btn" title="Toggle Light/Dark Theme">
+                    <i class="fa-solid fa-moon"></i>
+                </button>
+                <div class="profile-chip" title="Edit Profile Settings">
+                    <div class="avatar-sm"><i class="fa-solid fa-user"></i></div>
+                    <span id="nav-user-name" class="font-mono">Citizen</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Single Centered Column Content -->
+        <main class="main-column">
             
-            <!-- Tab: Dashboard -->
-            <section id="dashboard" class="tab-content active">
-                <header class="tab-header">
-                    <h1>Namaste, <span class="user-name-span">Citizen</span></h1>
-                    <p>Complete your profile so the AI can automatically draft letters on your behalf.</p>
-                </header>
+            <!-- Sticky Docked Header (Appears after search scroll) -->
+            <div id="docked-search-bar" class="docked-bar hidden">
+                <div class="docked-info">
+                    <span class="font-mono case-id-tag">CASE-FILE #<span id="docked-case-id">2026-0815</span></span>
+                    <span id="docked-grievance-text" class="docked-text">Grievance summary text...</span>
+                </div>
+                <div class="docked-actions">
+                    <span id="docked-severity-badge" class="severity-pill">HIGH</span>
+                    <button id="docked-back-btn" class="btn-ghost-sm"><i class="fa-solid fa-arrow-up"></i> Search</button>
+                </div>
+            </div>
 
-                <div class="card">
-                    <h3><i class="fa-solid fa-address-card"></i> Personal Details</h3>
+            <!-- Tab: Dashboard / Profile Settings -->
+            <section id="dashboard" class="tab-content">
+                <div class="glass-card">
+                    <div class="card-header">
+                        <i class="fa-solid fa-id-card card-icon"></i>
+                        <div>
+                            <h2 class="card-title font-heading">Citizen Case Profile</h2>
+                            <p class="card-sub">Saved locally for auto-filling legal letter signatures & RTI filings.</p>
+                        </div>
+                    </div>
                     <div class="form-grid">
                         <div class="form-group">
-                            <label>Full Name</label>
+                            <label class="font-mono">FULL NAME</label>
                             <input type="text" id="user_name" placeholder="E.g. Ramesh Kumar">
                         </div>
                         <div class="form-group">
-                            <label>State</label>
+                            <label class="font-mono">STATE / UT</label>
                             <select id="user_state">
                                 <option value="Andhra Pradesh">Andhra Pradesh</option>
                                 <option value="Assam">Assam</option>
@@ -94,216 +109,313 @@
                             </select>
                         </div>
                         <div class="form-group full-width">
-                            <label>Complete Address</label>
-                            <textarea id="user_address" rows="2" placeholder="123, Block C, City, PIN..."></textarea>
+                            <label class="font-mono">COMPLETE ADDRESS</label>
+                            <textarea id="user_address" rows="2" placeholder="House/Flat No., Sector/Block, Sub-District, PIN Code..."></textarea>
                         </div>
                         <div class="form-group">
-                            <label>Contact Number</label>
+                            <label class="font-mono">CONTACT NUMBER</label>
                             <input type="text" id="user_contact" placeholder="10-digit mobile number">
                         </div>
                     </div>
-                    <button id="save-profile-btn" class="primary-btn" style="margin-top: 2rem;">
-                        <i class="fa-solid fa-floppy-disk"></i>
-                        <span>Save Profile & Continue</span>
+                    <button id="save-profile-btn" class="btn-saffron" style="margin-top: 1.5rem;">
+                        <i class="fa-solid fa-floppy-disk"></i> Save Profile Settings
                     </button>
                 </div>
             </section>
 
-            <!-- Tab: New Complaint -->
-            <section id="complaint" class="tab-content">
-                <header class="tab-header">
-                    <h1>Report an Issue</h1>
-                    <p>Describe your civic problem. Our AI Crew will analyze it, find the responsible department, and draft legal letters.</p>
-                </header>
+            <!-- Tab: File Grievance (Home Hero & Search Instrument) -->
+            <section id="complaint" class="tab-content active">
+                
+                <!-- Hero Header -->
+                <div class="hero-section">
+                    <h2 class="hero-devanagari-title font-devanagari">न्यायवाणी</h2>
+                    <h1 class="hero-headline font-heading">File Your Grievance.</h1>
+                    <p class="hero-sub">Describe your municipal or legal issue in plain language. Our AI engine transforms it into a routed, legally-grounded case file instantly.</p>
+                </div>
 
-                <div class="omni-input-container">
-                    <div class="method-toggle">
-                        <button id="btn-text-mode" class="method-btn active"><i class="fa-solid fa-keyboard"></i> Type</button>
-                        <button id="btn-voice-mode" class="method-btn"><i class="fa-solid fa-microphone"></i> Speak</button>
-                    </div>
-
-                    <div id="text-input-container">
-                        <textarea id="complaint_text" placeholder="Explain your problem in detail. E.g., 'There has been severe waterlogging in my street for the past 2 weeks causing mosquito breeding...'"></textarea>
-                    </div>
-
-                    <div id="voice-input-container" class="hidden">
-                        <div class="voice-recorder-ui">
-                            <div class="record-btn-container">
-                                <button id="voice-trigger-btn" class="record-btn"><i class="fa-solid fa-microphone"></i></button>
-                            </div>
-                            <p id="record-status" class="record-status">Click to Start Dictation</p>
-                            <small id="recording-hint">Speak naturally. Our AI will transcribe your voice into professional text.</small>
+                <!-- Signature Search Instrument Panel -->
+                <div class="search-instrument-glass">
+                    <div class="search-input-wrapper">
+                        <i class="fa-solid fa-scale-balanced scale-instrument-icon"></i>
+                        <textarea id="complaint_text" class="search-textarea" rows="3" placeholder="Describe your grievance (e.g., 'Severe sewage overflow in Ward 14 causing health hazards for 2 weeks...')" aria-label="Grievance description"></textarea>
+                        
+                        <div class="instrument-actions">
+                            <button id="voice-trigger-btn" class="mic-instrument-btn" title="Speak Grievance (Voice STT)">
+                                <i class="fa-solid fa-microphone"></i>
+                                <span class="mic-wave"></span>
+                            </button>
+                            <button id="process-btn" class="btn-saffron-action">
+                                <span>File Case</span>
+                                <i class="fa-solid fa-arrow-right"></i>
+                                <div class="loader hidden"></div>
+                            </button>
                         </div>
                     </div>
                     
-                    <div id="loading-steps" class="hidden" style="margin-top: 1rem; text-align: center; color: var(--primary); font-weight: 500; font-size: 1.1rem; animation: pulse 2s infinite;">
-                        <p id="loading-text">✨ Initializing AI Agents...</p>
+                    <!-- Voice Recording Status Banner -->
+                    <div id="voice-input-container" class="voice-status-bar hidden">
+                        <span id="record-status" class="font-mono">Listening... Speak clearly in English or Hindi</span>
                     </div>
 
-                    <button id="process-btn" class="primary-btn" style="width: 100%; margin-top: 1rem;">
-                        <i class="fa-solid fa-bolt"></i>
-                        <span>Analyze & Generate Action Plan</span>
-                        <div class="loader hidden"></div>
-                    </button>
+                    <!-- Quick Chip Prompts -->
+                    <div class="quick-chips-wrapper">
+                        <span class="chips-label font-mono">QUICK SCENARIOS:</span>
+                        <button class="quick-chip" data-text="Severe waterlogging and uncleaned drains in residential street causing disease risk.">Waterlogging & Drainage</button>
+                        <button class="quick-chip" data-text="Garbage pileup not cleared by municipal trucks for over 10 days in main market area.">Waste Management</button>
+                        <button class="quick-chip" data-text="Defective streetlights causing safety issues at night for women and elders.">Street Lighting</button>
+                        <button class="quick-chip" data-text="Unexplained high water bill charges and delayed RTI response from water department.">Billing & RTI</button>
+                    </div>
+                </div>
+
+                <!-- Terminal-Style Agent Checklist Progress -->
+                <div id="loading-steps" class="terminal-checklist-card hidden">
+                    <div class="terminal-header">
+                        <span class="terminal-dot red"></span>
+                        <span class="terminal-dot yellow"></span>
+                        <span class="terminal-dot green"></span>
+                        <span class="font-mono terminal-title">NYAYAVAANI_CREW_AGENTS // ORCHESTRATION PIPELINE</span>
+                    </div>
+                    <div class="terminal-body font-mono">
+                        <div class="terminal-row" id="term-step-1">
+                            <span class="term-status">[RUNNING]</span> 1. Categorizing grievance & assessing severity...
+                        </div>
+                        <div class="terminal-row pending" id="term-step-2">
+                            <span class="term-status">[PENDING]</span> 2. Searching central & state government department helplines...
+                        </div>
+                        <div class="terminal-row pending" id="term-step-3">
+                            <span class="term-status">[PENDING]</span> 3. Querying legal vector index for citizen rights & acts...
+                        </div>
+                        <div class="terminal-row pending" id="term-step-4">
+                            <span class="term-status">[PENDING]</span> 4. Drafting formal legal complaint letter...
+                        </div>
+                        <div class="terminal-row pending" id="term-step-5">
+                            <span class="term-status">[PENDING]</span> 5. Generating social media campaign escalation draft...
+                        </div>
+                    </div>
                 </div>
             </section>
 
-            <!-- Tab: AI Analysis -->
+            <!-- Tab: Legal Chatbot (Clean Stream Layout with Fixed Bottom Input) -->
+            <section id="rag" class="tab-content">
+                <div class="rag-standalone-container">
+                    
+                    <!-- Clean Centered Header -->
+                    <div class="rag-header-center">
+                        <h2 class="rag-title font-heading"><i class="fa-solid fa-scale-balanced" style="color: var(--ashoka-blue);"></i> NyayaVaani Legal Chatbot</h2>
+                        <p class="rag-sub font-mono">Ask any question about Indian laws, RTI deadlines, or citizen rights</p>
+                    </div>
+
+                    <!-- Messages Stream Top-to-Bottom -->
+                    <div id="tab-rag-chat-history" class="rag-stream-history">
+                        <div class="bot-message-glass">
+                            <span class="bot-avatar font-mono">AI</span>
+                            <div class="message-body font-body">
+                                Namaste! I am your NyayaVaani Legal Chatbot. Ask me any question regarding Indian laws, Consumer Protection Act, RTI procedures, or citizen rights.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sticky Fixed Bottom Input Box in Center -->
+                    <div class="rag-bottom-input-bar">
+                        <div class="rag-input-glass-pill">
+                            <i class="fa-solid fa-magnifying-glass rag-search-icon"></i>
+                            <input type="text" id="tab-rag-input" placeholder="" aria-label="Legal question">
+                            <button id="tab-send-rag" class="btn-saffron-action">
+                                <span>Ask</span>
+                                <i class="fa-solid fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+            <!-- Tab: AI Analysis / Case Results (Connected by The Gradient Thread Spine) -->
             <section id="results" class="tab-content">
-                <header class="tab-header">
-                    <h1>Resolution Dashboard</h1>
-                    <p>Your grievance has been analyzed by our AI Legal Crew.</p>
-                </header>
+                
+                <div class="results-header">
+                    <h2 class="font-heading section-title">Case File Analysis & Action Plan</h2>
+                    <p class="font-mono case-meta-line">SYS_REF: <span id="res-session-id">NV-2026-8819</span> • GUARDRAILS: OK (0.25s)</p>
+                </div>
 
-                <!-- Top Row: Summary & Department -->
-                <div class="results-grid">
-                    <div class="card">
-                        <h3><i class="fa-solid fa-layer-group"></i> Issue Classification</h3>
-                        <div class="summary-stats">
-                            <div class="stat">
-                                <label>Category</label>
-                                <span id="res-category" style="color: var(--primary)">N/A</span>
-                            </div>
-                            <div class="stat">
-                                <label>Assessed Severity</label>
-                                <span id="res-severity" class="severity-tag">N/A</span>
-                            </div>
-                        </div>
-                    </div>
+                <!-- Results Spine Layout: Gradient Thread on Left, Cards Column on Right -->
+                <div class="results-spine-wrapper">
+                    <!-- The Signature Gradient Thread Line -->
+                    <div class="gradient-thread-line"></div>
 
-                    <div class="card">
-                        <h3><i class="fa-solid fa-building-columns"></i> Routing Details</h3>
-                        <div class="doc-tabs" style="margin-bottom: 1rem;">
-                            <button class="dept-tab active" data-dept="central">Central Authority</button>
-                            <button class="dept-tab" data-dept="state">State Authority</button>
-                        </div>
-                        <div id="dept-info-content" class="dept-info-card">
-                            <div class="dept-detail-row">
-                                <div class="dept-icon"><i class="fa-solid fa-building"></i></div>
-                                <div class="dept-text">
-                                    <label>Department</label>
-                                    <span id="dept-name">N/A</span>
-                                </div>
+                    <!-- Cards Column -->
+                    <div class="spine-cards-column">
+                        
+                        <!-- Module 1: Classification & Urgency -->
+                        <div class="glass-card module-card">
+                            <div class="module-header">
+                                <span class="module-number font-mono">01</span>
+                                <h3 class="font-heading">Issue Classification & Urgency</h3>
                             </div>
-                            <div class="dept-detail-row">
-                                <div class="dept-icon"><i class="fa-solid fa-phone"></i></div>
-                                <div class="dept-text">
-                                    <label>Helpline / Contact</label>
-                                    <span id="dept-helpline">N/A</span>
+                            <div class="stats-row">
+                                <div class="stat-box">
+                                    <label class="font-mono">GRIEVANCE CATEGORY</label>
+                                    <span id="res-category" class="stat-value font-heading">N/A</span>
                                 </div>
-                            </div>
-                            <div class="dept-detail-row">
-                                <div class="dept-icon"><i class="fa-solid fa-globe"></i></div>
-                                <div class="dept-text">
-                                    <label>Official Portal</label>
-                                    <a id="dept-portal" href="#" target="_blank">Visit Website <i class="fa-solid fa-arrow-up-right-from-square" style="font-size: 0.8em"></i></a>
+                                <div class="stat-box">
+                                    <label class="font-mono">ASSESSED SEVERITY</label>
+                                    <div class="severity-wrapper">
+                                        <span id="res-severity-dot" class="severity-pulse-dot"></span>
+                                        <span id="res-severity" class="severity-pill-large font-mono">MEDIUM</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </div>
 
-                <!-- Middle Row: Escalation & Rights -->
-                <div class="results-grid">
-                    <div class="card">
-                        <h3><i class="fa-solid fa-stairs"></i> Escalation Hierarchy</h3>
-                        <div id="escalation-path" class="path-container">
-                            <p class="text-muted">Analyzing escalation options...</p>
-                        </div>
-                    </div>
-
-                    <div class="card">
-                        <h3><i class="fa-solid fa-gavel"></i> Key Legal Rights</h3>
-                        <div id="legal-rights-list" class="rights-container">
-                            <p class="text-muted">Identifying your rights...</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Bottom Row: Documents & Strategy Chat -->
-                <div class="results-grid" style="grid-template-columns: 1fr;">
-                    <div class="card">
-                        <h3><i class="fa-solid fa-file-signature"></i> Auto-Drafted Documents</h3>
-                        <div class="doc-tabs">
-                            <button class="doc-tab active" data-doc="letter">Formal Letter</button>
-                            <button class="doc-tab" data-doc="email">Email Draft</button>
-                            <button class="doc-tab" data-doc="twitter">Twitter / X Post</button>
-                        </div>
-                        <div class="doc-viewer">
-                            <pre id="doc-content"></pre>
-                            <div class="doc-actions">
-                                <button id="copy-doc" class="secondary-btn"><i class="fa-regular fa-copy"></i> Copy Text</button>
-                                <button id="download-doc" class="secondary-btn"><i class="fa-solid fa-download"></i> Download as TXT</button>
+                        <!-- Module 2: Authority Routing -->
+                        <div class="glass-card module-card">
+                            <div class="module-header">
+                                <span class="module-number font-mono">02</span>
+                                <h3 class="font-heading">Authority Routing Details</h3>
+                            </div>
+                            <div class="dept-selector-pills">
+                                <button class="dept-pill active" data-dept="central">Central Authority</button>
+                                <button class="dept-pill" data-dept="state">State Authority</button>
+                            </div>
+                            <div id="dept-info-content" class="authority-details-grid">
+                                <div class="auth-row">
+                                    <i class="fa-solid fa-building auth-icon"></i>
+                                    <div>
+                                        <label class="font-mono">DEPARTMENT / MINISTRY</label>
+                                        <span id="dept-name" class="auth-text font-heading">N/A</span>
+                                    </div>
+                                </div>
+                                <div class="auth-row">
+                                    <i class="fa-solid fa-phone auth-icon"></i>
+                                    <div>
+                                        <label class="font-mono">HELPLINE / CONTACT</label>
+                                        <span id="dept-helpline" class="auth-text font-mono">N/A</span>
+                                    </div>
+                                </div>
+                                <div class="auth-row">
+                                    <i class="fa-solid fa-globe auth-icon"></i>
+                                    <div>
+                                        <label class="font-mono">OFFICIAL PORTAL</label>
+                                        <a id="dept-portal" href="#" target="_blank" class="portal-link font-mono">Visit Official Website <i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+                                    </div>
+                                </div>
                             </div>
                         </div>
+
+                        <!-- Module 3: Escalation Hierarchy -->
+                        <div class="glass-card module-card">
+                            <div class="module-header">
+                                <span class="module-number font-mono">03</span>
+                                <h3 class="font-heading">Escalation Roadmap</h3>
+                            </div>
+                            <div id="escalation-path" class="roadmap-container">
+                                <!-- Step cards populated dynamically with directional arrows -->
+                            </div>
+                        </div>
+
+                        <!-- Module 4: Key Legal Rights -->
+                        <div class="glass-card module-card">
+                            <div class="module-header">
+                                <span class="module-number font-mono">04</span>
+                                <h3 class="font-heading">Key Legal Rights & Act Citations</h3>
+                            </div>
+                            <div id="legal-rights-list" class="rights-grid">
+                                <!-- Populated dynamically -->
+                            </div>
+                        </div>
+
+                        <!-- Module 5: Executive Document Studio Pro -->
+                        <div class="glass-card module-card studio-card">
+                            <div class="studio-top-bar">
+                                <div class="module-header" style="margin-bottom:0">
+                                    <span class="module-number font-mono">05</span>
+                                    <h3 class="font-heading">Executive Document Studio Pro</h3>
+                                </div>
+                                <div class="studio-tabs-row">
+                                    <button class="studio-tab active" data-doc="letter">Formal Letter</button>
+                                    <button class="studio-tab" data-doc="email">Email Payload</button>
+                                    <button class="studio-tab" data-doc="twitter">X Campaign</button>
+                                </div>
+                            </div>
+
+                            <!-- Warm Off-White Paper Surface Document Preview Container -->
+                            <div class="paper-surface-container">
+                                <div class="paper-watermark font-mono">NYAYAVAANI LEGAL SPECIFICATION</div>
+                                <div id="doc-content" class="paper-document-text font-serif">
+                                    Select a document tab above to preview your generated legal document.
+                                </div>
+                            </div>
+
+                            <!-- Action Bar: Export PDF, Print, Download, Copy -->
+                            <div class="studio-action-row">
+                                <button id="copy-doc" class="btn-studio-action"><i class="fa-regular fa-copy"></i> Copy Text</button>
+                                <button id="download-doc" class="btn-studio-action"><i class="fa-solid fa-download"></i> TXT</button>
+                                <button id="export-pdf-doc" class="btn-saffron-action" style="padding: 0.5rem 1rem; font-size: 0.85rem;"><i class="fa-solid fa-file-pdf"></i> Export PDF</button>
+                                <button id="print-doc" class="btn-studio-action"><i class="fa-solid fa-print"></i> Print</button>
+                            </div>
+                        </div>
+
+                        <!-- Module 6: Follow-up Case Assistant -->
+                        <div class="glass-card module-card">
+                            <div class="module-header">
+                                <span class="module-number font-mono">06</span>
+                                <h3 class="font-heading">Follow-up Case Assistant</h3>
+                            </div>
+                            <div id="complaint-chat-history" class="chat-widget-body" style="height: 250px; margin-bottom: 1rem; border-radius: 12px; border: 1px solid var(--glass-border);">
+                                <div class="bot-message-glass">
+                                    <span class="bot-avatar font-mono">AI</span>
+                                    <div class="message-body font-body">
+                                        Ask me any specific question about your case file output, legal strategy, or next filing steps.
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="chat-widget-input-row" style="border-radius: 50px;">
+                                <input type="text" id="followup-input" placeholder="Ask a follow-up question about this case file...">
+                                <button id="send-followup" class="btn-saffron-action" style="padding: 0.5rem 1.2rem; font-size: 0.85rem;"><i class="fa-solid fa-paper-plane"></i> Ask Assistant</button>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
-
-
             </section>
 
-            <!-- Tab: Legal Chatbot -->
-            <section id="legal-rag" class="tab-content">
-                <header class="tab-header">
-                    <h1>Legal Knowledge Base</h1>
-                    <p>Ask direct questions to our AI trained on Indian Statutes and Civic Acts.</p>
-                </header>
-
-                <div class="card" style="padding: 1.5rem;">
-                    <div id="rag-chat-history" class="chat-history" style="height: 400px;">
-                        <div class="message bot">Namaste! I am NyayaVaani's Legal AI. Ask me any general question about your legal rights or civic procedures.</div>
-                    </div>
-                    
-                    <div style="margin-top: 1rem;">
-                        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem; font-weight: 600;">Sample Queries:</p>
-                        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                            <button class="secondary-btn sample-q">What is the RTI Act timeframe?</button>
-                            <button class="secondary-btn sample-q">Consumer rights for delayed refunds?</button>
-                            <button class="secondary-btn sample-q">How to report municipal corruption?</button>
-                        </div>
-                    </div>
-
-                    <div class="chat-input" style="margin-top: 1.5rem;">
-                        <input type="text" id="rag-input" placeholder="Type your legal query here...">
-                        <button id="send-rag"><i class="fa-solid fa-magnifying-glass"></i></button>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Tab: History -->
+            <!-- Tab: Case History -->
             <section id="history" class="tab-content">
-                <header class="tab-header">
-                    <h1>My Complaint Box</h1>
-                    <p>Access all your previously generated grievances and reports.</p>
-                </header>
-                <div id="history-container" class="results-grid">
-                    <!-- Loaded dynamically via script.js -->
+                <h2 class="font-heading section-title" style="margin-bottom:1.5rem;">Previous Civic Case Files</h2>
+                <div id="history-container" class="history-grid">
+                    <!-- Populated dynamically -->
                 </div>
             </section>
-
         </main>
     </div>
 
-    <!-- Floating Expert Chat Widget -->
+    <!-- Floating Chatbot Widget for Legal Rights Q&A -->
     <div class="floating-chat-container">
-        <div class="chat-widget-label">Ask Grievance Support</div>
-        <button id="chat-widget-btn" class="chat-widget-btn">
-            <i class="fa-solid fa-user-tie"></i>
+        <button id="chat-widget-btn" class="chat-fab-btn" title="Ask NyayaVaani Legal Expert">
+            <i class="fa-solid fa-comments"></i>
+            <span>Legal Assistant</span>
         </button>
-        <div id="chat-widget-window" class="chat-widget-window widget-hidden">
+
+        <div id="chat-widget-window" class="chat-widget-glass widget-hidden">
             <div class="chat-widget-header">
-                <div class="header-info">
-                    <i class="fa-solid fa-user-tie"></i>
-                    <span>Expert Guidance</span>
+                <div class="chat-header-title font-heading">
+                    <i class="fa-solid fa-scale-balanced"></i> NyayaVaani Legal Assistant
                 </div>
-                <button id="close-chat-btn"><i class="fa-solid fa-xmark"></i></button>
+                <button id="close-chat-btn" class="close-btn"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            <div id="complaint-chat-history" class="chat-history widget-history">
-                <div class="message bot">Hello! I am your NyayaVaani Grievance Assistant. How can I help you with your complaint or legal steps today?</div>
+            
+            <div id="rag-chat-history" class="chat-widget-body">
+                <div class="bot-message-glass">
+                    <span class="bot-avatar font-mono">AI</span>
+                    <div class="message-body font-body">
+                        Namaste! I am your NyayaVaani legal rights assistant. Ask me any question about your case file, RTI filings, or applicable Indian laws.
+                    </div>
+                </div>
             </div>
-            <div class="chat-input widget-input">
-                <input type="text" id="followup-input" placeholder="Ask your question...">
-                <button id="send-followup"><i class="fa-solid fa-paper-plane"></i></button>
+
+            <div class="chat-widget-input-row">
+                <input type="text" id="rag-input" placeholder="Ask a legal question..." aria-label="Legal question">
+                <button id="send-rag" class="btn-saffron-sm"><i class="fa-solid fa-paper-plane"></i></button>
             </div>
         </div>
     </div>
