@@ -60,19 +60,23 @@ A high-accuracy legal knowledge base that prevents hallucinations:
 
 ---
 
-## 🏗️ System Architecture
+## 🏗️ System Architecture & Observability Mesh
 
-### 🤖 1. High-Level CrewAI Multi-Agent Architecture
-Component-wise execution flow showing multimodal ingestion, input guardrails, sequential multi-agent execution DAG, output guardrails, and final delivery—all enclosed under end-to-end Langfuse & OpenTelemetry observability:
+![NyayaVaani System Architecture](./assets/system_architecture.png)
+
+---
+
+### 🤖 1. High-Level CrewAI Multi-Agent Pipeline
+Component-wise linear execution flow showing multimodal ingestion, input guardrails, sequential multi-agent execution DAG, LLM-as-a-Judge evaluation, output guardrails, and final delivery—enclosed under Langfuse Observability (covering **Evaluations, Cost, Tokens, Latency, and Logs/Traces**):
 
 ```mermaid
 graph LR
-    subgraph ObservabilityMesh ["🔭 LANGFUSE & OPENTELEMETRY OBSERVABILITY MESH"]
+    subgraph ObservabilityMesh ["🔭 LANGFUSE & OPENTELEMETRY OBSERVABILITY MESH (Evaluations • Cost • Tokens • Latency • Logs & Traces)"]
         direction LR
 
         IN["📥 Citizen Input\n(Text / Voice STT)"] --> IG["🛡️ Input Guardrails\n(PII, Off-Topic, Jailbreak)"]
 
-        subgraph CrewAgents ["🤖 CrewAI Multi-Agent Sequential Execution"]
+        subgraph CrewAgents ["🤖 CrewAI Multi-Agent Sequential Engine"]
             direction LR
             IG -- "is_safe == True" --> A1["Agent 1: Grievance Analyst\n(Problem Category & Severity)"]
             A1 --> A2["Agent 2: Department Scout\n(Helpline & Nodal Dept Lookup)"]
@@ -81,19 +85,20 @@ graph LR
             A4 --> A5["Agent 5: Social Media Scout\n(Public Twitter/X Escalation)"]
         end
 
-        A5 --> OG["🛡️ Output Guardrails\n(Toxicity & Safety Filter)"]
+        A5 --> JUDGE1["⚖️ LLM-as-a-Judge Evaluation\n(System Output Quality & Safety)"]
+        JUDGE1 --> OG["🛡️ Output Guardrails\n(Toxicity & Content Safety Filter)"]
         OG --> OUT["📄 Final Aggregated Response\n(Letter, Email, Tweet & Dept JSON)"]
     end
 ```
 
 ---
 
-### 📚 2. High-Level Hybrid Legal RAG Pipeline Architecture
-Component-wise architecture showing query guardrails, hybrid dense/sparse search, cross-encoder reranking, confidence scoring, grounded generation, and output filters—all enclosed under Langfuse tracing:
+### 📚 2. High-Level Hybrid Legal RAG Pipeline
+Component-wise architecture showing query guardrails, hybrid dense/sparse search, cross-encoder reranking, confidence scoring, grounded generation, LLM-as-a-Judge evaluation, and output filters—enclosed under Langfuse tracing:
 
 ```mermaid
 graph LR
-    subgraph RAGObservabilityMesh ["🔭 LANGFUSE OBSERVABILITY & TRACING MESH (LLM-as-a-Judge Evaluation)"]
+    subgraph RAGObservabilityMesh ["🔭 LANGFUSE OBSERVABILITY & TRACING MESH (Evaluations • Cost • Tokens • Latency • Logs & Traces)"]
         direction LR
 
         RIN["❓ Citizen Question"] --> RIG["🛡️ Input Guardrails\n(PII, Off-Topic, Jailbreak)"]
@@ -106,8 +111,8 @@ graph LR
             CONF --> GEN["Grounded Generator\n(Citation & Zero-Inference Enforcement)"]
         end
 
-        GEN --> JUDGE["⚖️ LLM-as-a-Judge Evaluation\n(Faithfulness & Hallucination Scoring)"]
-        GEN --> ROG["🛡️ Output Guardrails\n(Toxicity Filter)"]
+        GEN --> JUDGE2["⚖️ LLM-as-a-Judge Evaluation\n(Faithfulness & Hallucination Scoring)"]
+        JUDGE2 --> ROG["🛡️ Output Guardrails\n(Toxicity Filter)"]
         ROG --> ROUT["💡 Final Answer &\nStatutory Sources"]
     end
 ```
