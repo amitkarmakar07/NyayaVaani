@@ -58,60 +58,13 @@ Enables interactive legal Q&A over Indian Acts (Consumer Protection Act, RTI Act
 
 ## 🏗️ System Architecture & Observability Mesh
 
-![NyayaVaani System Architecture](./assets/system_architecture.png)
+### 🤖 1. CrewAI Multi-Agent Architecture
+![CrewAI Multi-Agent Architecture](./assets/crew_architecture.png)
 
 ---
 
-### 🤖 1. High-Level CrewAI Multi-Agent Pipeline
-Component-wise linear execution flow showing multimodal ingestion, input guardrails, sequential multi-agent execution DAG, LLM-as-a-Judge evaluation, output guardrails, and final delivery—enclosed under Langfuse Observability (covering **Evaluations, Cost, Tokens, Latency, and Logs/Traces**):
-
-```mermaid
-graph LR
-    subgraph ObservabilityMesh ["🔭 LANGFUSE & OPENTELEMETRY OBSERVABILITY MESH (Evaluations • Cost • Tokens • Latency • Logs & Traces)"]
-        direction LR
-
-        IN["📥 Citizen Input\n(Text / Voice STT)"] --> IG["🛡️ Input Guardrails\n(PII, Off-Topic, Jailbreak)"]
-
-        subgraph CrewAgents ["🤖 CrewAI Multi-Agent Sequential Engine"]
-            direction LR
-            IG -- "is_safe == True" --> A1["Agent 1: Grievance Analyst\n(Problem Category & Severity)"]
-            A1 --> A2["Agent 2: Department Scout\n(Helpline & Nodal Dept Lookup)"]
-            A2 --> A3["Agent 3: Legal Researcher\n(Statutory Laws & Rights RAG)"]
-            A3 --> A4["Agent 4: Document Architect\n(Letter, Email & SMS Drafts)"]
-            A4 --> A5["Agent 5: Social Media Scout\n(Public Twitter/X Escalation)"]
-        end
-
-        A5 --> JUDGE1["⚖️ LLM-as-a-Judge Evaluation\n(System Output Quality & Safety)"]
-        JUDGE1 --> OG["🛡️ Output Guardrails\n(Toxicity & Content Safety Filter)"]
-        OG --> OUT["📄 Final Aggregated Response\n(Letter, Email, Tweet & Dept JSON)"]
-    end
-```
-
----
-
-### 📚 2. High-Level Hybrid Legal RAG Pipeline
-Component-wise architecture showing query guardrails, hybrid dense/sparse search, cross-encoder reranking, confidence scoring, grounded generation, LLM-as-a-Judge evaluation, and output filters—enclosed under Langfuse tracing:
-
-```mermaid
-graph LR
-    subgraph RAGObservabilityMesh ["🔭 LANGFUSE OBSERVABILITY & TRACING MESH (Evaluations • Cost • Tokens • Latency • Logs & Traces)"]
-        direction LR
-
-        RIN["❓ Citizen Question"] --> RIG["🛡️ Input Guardrails\n(PII, Off-Topic, Jailbreak)"]
-
-        subgraph RAGEngine ["📚 Hybrid Legal RAG Engine"]
-            direction LR
-            RIG -- "is_safe == True" --> HS["Hybrid Search\n(Dense BGE-M3 + Sparse BM25 via RRF)"]
-            HS --> CE["Cross-Encoder\nReranker"]
-            CE --> CONF["Confidence Evaluator\n(HIGH / MEDIUM / LOW)"]
-            CONF --> GEN["Grounded Generator\n(Citation & Zero-Inference Enforcement)"]
-        end
-
-        GEN --> JUDGE2["⚖️ LLM-as-a-Judge Evaluation\n(Faithfulness & Hallucination Scoring)"]
-        JUDGE2 --> ROG["🛡️ Output Guardrails\n(Toxicity Filter)"]
-        ROG --> ROUT["💡 Final Answer &\nStatutory Sources"]
-    end
-```
+### 📚 2. Hybrid Legal RAG Pipeline Architecture
+![Hybrid Legal RAG Architecture](./assets/rag_architecture.png)
 
 ---
 
@@ -120,26 +73,26 @@ graph LR
 ### 🛡️ Multi-Layer Security Shield
 - **Layer 1: Instant Regex Pre-Filter (<1ms)**: Scans for sensitive Indian PII (Aadhaar `[2-9]\d{3}\d{4}\d{4}`, PAN `[A-Z]{5}[0-9]{4}[A-Z]`, Phone, Email) and system prompt injection patterns.
 - **Layer 2: Fast LLM Security Evaluator (~250ms)**: 1-token structured `gpt-4o-mini` classifier filtering off-topic queries while permitting greetings, follow-up questions, and informal typo phrasing.
-- **Output Shield**: Content toxicity and policy violation filter.
+- **NeMo Guardrails Integration**: Off-Topic, PII, and Jailbreak detection policies.
+- **Output Shield**: Content toxicity and policy violation guardrails.
 
 ### 📊 Observability (Langfuse + OpenTelemetry)
 Every request is instrumented with OpenTelemetry (`OTLPSpanExporter`), tracking **5 Core Pillars**:
-1. **Evaluations**: Automated LLM-as-a-Judge scoring per turn.
+1. **Evaluations**: LLM-as-a-Judge scoring.
 2. **Cost**: Model-wise API expenditure and token pricing.
-3. **Tokens**: Prompt vs completion token breakdown.
+3. **Tokens**: Prompt vs completion tokens.
 4. **Latency**: Per-step agent execution & end-to-end request latencies.
 5. **Logs & Traces**: Hierarchical parent-child span trees for agent tool calls and LLM invocations.
 
 ### 🎯 LLM-as-a-Judge Benchmark Metrics
 Evaluated across golden dataset test suites (`eval/RAG_Golden_Dataset.csv`):
 
-| Evaluation Metric | Score | Target Threshold | Status |
-| :--- | :---: | :---: | :---: |
-| **Faithfulness Score** | **0.92** | >= 0.85 | ✅ Passed |
-| **Answer Relevance Score** | **0.89** | >= 0.80 | ✅ Passed |
-| **Context Precision & Recall** | **0.91** | >= 0.85 | ✅ Passed |
-| **Input Guardrail Latency (P95)** | **~245 ms** | < 300 ms | ✅ Passed |
-| **RAG Query Response Latency** | **~2.1 s** | < 3.0 s | ✅ Passed |
+| Evaluation Metric | Score |
+| :--- | :---: |
+| **Faithfulness Score** | **0.92** |
+| **Answer Relevance Score** | **0.89** |
+| **Context Precision & Recall** | **0.91** |
+| **RAG Query Response Latency** | **5-6s** |
 
 ---
 
@@ -183,4 +136,4 @@ Distributed under the MIT License. See `LICENSE` for more information.
 ## 👨‍💻 Author
 **Amit Karmakar**  
 *Data Science & AI Developer*  
-[LinkedIn](https://www.linkedin.com/in/amitkarmakar07/) • [Portfolio](https://amitkarmakar.com/) • [GitHub](https://github.com/amitkarmakar07)
+[LinkedIn](https://www.linkedin.com/in/amit-karmakar-355817258/) • [GitHub](https://github.com/amitkarmakar07)
