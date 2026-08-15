@@ -24,15 +24,16 @@ def state_helpline_tool(query: str) -> str:
 
 @tool("Twitter Handle Lookup Tool")
 def twitter_handle_lookup_tool(query: str) -> str:
-    """Useful for finding the official Twitter/X handle of a specific government official, department, or police force.
+    """Useful for finding the official INSTITUTIONAL Twitter/X handle of a government department, municipal corporation, or police force.
+    STRICTLY DO NOT search for or tag personal individual accounts of politicians (like @MamataOfficial or CM/PM personal handles).
     Pass a specific query like 'Mumbai Police official twitter handle'."""
     try:
         api_key = os.environ.get("SERPAPI_API_KEY") or os.environ.get("SERPAPI_KEY")
         search = SerpAPIWrapper(serpapi_api_key=api_key)
-        strict_query = f"{query} site:twitter.com OR site:x.com"
+        strict_query = f"{query} department official site:twitter.com OR site:x.com"
         return search.run(strict_query)
     except Exception as e:
-        return f"Search failed: {e}. Default to generic tags."
+        return f"Search failed: {e}. Default to generic institutional tags like @BBMPOFFICIAL or @DelhiPolice."
 
 @tool("Department Lookup Tool")
 def department_lookup_tool(category: str) -> str:

@@ -43,7 +43,7 @@ writer_task:
     - Name: {user_name}
     - Address: {user_address}
     - State: {user_state}
-    - Contact: {user_contact}
+    - Contact: {user_contact} (PRIVACY INSTRUCTION: DO NOT INCLUDE MOBILE NUMBER IN THE LETTER BODY OR EMAIL BODY)
     
     1. A formal letter. MUST strictly use line breaks (\n) for formatting. DO NOT use headings like "Introduction:" or "Problem:". Write it as a seamless professional letter. Follow this exact structure:
        
@@ -68,7 +68,6 @@ writer_task:
        
        Yours faithfully,
        [Citizen Name]
-       [Citizen Contact]
        Place: [City/State]
        
     2. An email (concise, action-oriented, with line breaks \n).
@@ -76,6 +75,7 @@ writer_task:
     CRITICAL RULES:
     1. Base ALL legal references ONLY on the provided legal context.
     2. Keep tone firm but respectful. Use simple English.
+    3. STRICT PRIVACY RULE: DO NOT include the citizen's mobile phone number or contact number inside the letter body or email body. Keep letter body and email body 100% free of personal phone numbers.
   expected_output: >
     A JSON object containing the formal_letter text, an email object (to, subject, body), key legal rights list, and suggested attachments.
 
@@ -85,8 +85,12 @@ social_media_task:
     
     CITIZEN'S STATE: {user_state}
     
-    STEP 1: Use your tool to find the official Twitter handles for the relevant authorities or ministries (e.g., the specific municipal corporation, department, or police force). STRICTLY DO NOT search for or tag any individuals (like CM, PM, or specific politicians). Use ONLY institutional handles.
+    STEP 1: Use your tool to find the official Twitter handles for the relevant authorities or ministries (e.g., the specific municipal corporation, department, or police force). STRICTLY DO NOT search for or tag any personal individual accounts (like @MamataOfficial, @NarendraModi, CM, PM, or individual politicians). Use ONLY institutional department handles (e.g., @BBMPOFFICIAL, @DelhiPolice, @ConsumerFeed).
     STEP 2: Draft a tweet (under 280 characters). If severity is High/Critical, make it urgent and demanding action. If Medium/Low, make it a polite request for attention.
     STEP 3: Ensure you include the found @handles and relevant hashtags.
+    
+    CRITICAL RULES:
+    1. STRICTLY DO NOT tag personal Twitter handles of politicians or individuals (e.g. @MamataOfficial, @ArvindKejriwal). Use ONLY official institutional/department handles.
+    2. STRICT PRIVACY RULE: DO NOT include the citizen's mobile phone number or personal contact number in the tweet body text.
   expected_output: >
     A JSON object that includes the final 'twitter_post' string.
