@@ -217,20 +217,43 @@ async def followup_question(request: FollowupRequest):
             conversation = session.get("conversation", [])
             conversation.append({"role": "user", "content": request.question})
 
-            system_prompt = f"""You are the NyayaVaani Strategy Expert. 
-You help Indian citizens understand their civic grievance, escalation paths, and drafted legal documents.
-Context of their problem:
-State: {session.get('state')}
-Original Complaint: {session.get('complaint_text')}
-Pipeline Analysis: {json.dumps(session.get('pipeline_result', {}))}
+            analysis = session.get("analysis", {})
+            department = session.get("department", {})
+            outputs = session.get("outputs", {})
 
-FORMATTING RULES:
-1. If the user asks a question UNRELATED to their complaint or civic/legal issues, refuse politely.
-2. Keep answers concise. Avoid unnecessary filler sentences.
-3. Use markdown only when it genuinely helps: **bold** for key terms, bullet lists for steps or options.
-4. Do NOT bold entire sentences or headings. Bold only 2-4 key words at most per response.
-5. Do NOT add blank lines between every sentence. Keep paragraphs compact.
-6. If listing steps, use a numbered list. If listing options, use bullet points.
+            # Fetch statutory legal context for the follow-up question
+            rag_context = ""
+            try:
+                rag = get_rag()
+                rag_res = rag.retrieve_and_rerank(request.question)
+                if rag_res.get("chunks"):
+                    rag_context = "\nApplicable Statutory Laws & Context:\n" + "\n".join([f"- {c['source']} (Page {c['page']}): {c['content']}" for c in rag_res["chunks"][:2]])
+            except Exception as e:
+                logger.warning(f"Followup RAG lookup skipped: {e}")
+
+            system_prompt = f"""You are the NyayaVaani Strategy Expert — an expert in Indian civic grievances, municipal escalation paths, and citizen legal rights.
+You help citizens understand their complaint analysis, escalation paths, nodal officer contact details, and drafted legal documents.
+
+CONTEXT OF CITIZEN'S PROBLEM:
+- State: {session.get('state', 'Not specified')}
+- Original Complaint: {session.get('complaint_text', '')}
+
+EXTRACTED COMPLAINT ANALYSIS:
+{json.dumps(analysis, indent=2)}
+
+DEPARTMENT & HELPLINE CONTACT DETAILS:
+{json.dumps(department, indent=2)}
+
+DRAFTED COMPLAINT DOCUMENTS & LEGAL RIGHTS:
+{json.dumps(outputs, indent=2)}
+{rag_context}
+
+RESPONSE & FORMATTING RULES:
+1. Provide clear, accurate, and direct answers using the problem context and statutory legal documents above.
+2. If the user asks for next steps, helplines, or who to contact, provide the exact department names, phone numbers, email addresses, or official portals from the context.
+3. If legal rights or acts apply, cite the exact statutory act and section inline.
+4. Keep answers concise and practical. Avoid unnecessary filler.
+5. Bold key terms (2-4 words max). Use numbered lists for steps and bullet points for options.
 """
             llm = ChatOpenAI(model="gpt-4o-mini", api_key=Config.OPENAI_API_KEY, temperature=0.7)
             
@@ -300,12 +323,32 @@ async def rag_chatbot(request: RAGChatRequest):
         session_id = request.session_id or str(uuid.uuid4())
         history: list = rag_sessions.get(session_id, [])
 
-        # Detect conversational / personal questions — skip RAG retrieval for these
+        # Load active complaint session context from DB if present
+        db_session = get_session(session_id)
+        complaint_context = ""
+        if db_session:
+            analysis = db_session.get("analysis", {})
+            department = db_session.get("department", {})
+            outputs = db_session.get("outputs", {})
+            complaint_context = f"""
+ACTIVE CITIZEN CASE FILE & COMPLAINT DETAILS:
+- State: {db_session.get('state', 'N/A')}
+- Original Complaint Text: {db_session.get('complaint_text', '')}
+- Extracted Problem Summary: {analysis.get('problem_summary', 'N/A')}
+- Department Category & Severity: {analysis.get('department_category', 'N/A')} | Severity: {analysis.get('severity', 'N/A')}
+- Assigned Nodal Authority: {department.get('department_name', 'N/A')}
+- Central Helpline: {department.get('central_details', {}).get('helpline', 'N/A')} | State Helpline: {department.get('state_details', {}).get('helpline', 'N/A')}
+- Official Portal: {department.get('central_details', {}).get('portal', 'N/A')}
+- Key Legal Rights Identified: {', '.join(outputs.get('key_legal_rights', []))}
+"""
+
+        # Detect conversational / personal / case file questions
         conversational_keywords = [
             "hello", "hi ", "hey ", "namaste", "good morning", "good evening",
             "how are you", "what is your name", "who are you", "what can you do",
             "my name is", "what is my name", "tell me about yourself",
-            "thank you", "thanks", "bye", "goodbye"
+            "thank you", "thanks", "bye", "goodbye", "what is my problem", "my problem",
+            "my case", "my complaint", "what issue", "what did i report"
         ]
         question_lower = request.question.lower().strip()
         is_conversational = any(kw in question_lower for kw in conversational_keywords)
@@ -322,19 +365,20 @@ async def rag_chatbot(request: RAGChatRequest):
                 if chunk.get("source"):
                     sources.add(chunk["source"])
 
-        # Build prompt with memory
-        system_msg = """You are NyayaVaani's Legal Assistant — an expert in Indian government laws and citizen rights.
-You remember the conversation history, so you can answer follow-up questions in context.
+        # Build prompt with memory and active case file
+        system_msg = f"""You are NyayaVaani's Legal Assistant — an expert in Indian government laws, citizen rights, and case files.
+You remember conversation history and have access to the citizen's active complaint case file.
 
 FORMATTING RULES:
-1. For legal questions: ONLY use information from the provided document excerpts.
-2. Always cite the Act name and section number inline when you reference law, e.g. *(RTI Act 2005, Section 7)*.
+1. If the citizen asks about their problem, case file, or reported complaint (e.g. "what is my problem?", "summarize my case"): use the ACTIVE CITIZEN CASE FILE & COMPLAINT DETAILS below to answer directly, empathetically, and accurately.
+2. For legal questions: use information from the provided document excerpts and cite the Act name and section number inline.
 3. Use simple language a common Indian citizen can understand.
 4. Structure: provide a short, direct answer first, followed by a compact list if details or options are needed.
 5. Do NOT include any "Next Step" section or sentence at the end. End directly after providing the answer.
 6. Bold only key legal terms or time limits (2-4 words max). Do NOT bold full sentences.
-7. For greetings or personal questions (e.g. "what is my name?"): respond naturally and conversationally without legal citations.
-8. If legal information is not in the provided documents, say: "This detail is not in my documents. Please verify at the official government portal."
+7. For greetings or personal questions: respond naturally and conversationally without legal citations.
+8. If legal information is not in the provided documents and no active case file matches, say: "This detail is not in my documents. Please verify at the official government portal."
+{complaint_context}
 """
 
         if context:
