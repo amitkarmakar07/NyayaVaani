@@ -93,7 +93,7 @@ Component-wise architecture showing query guardrails, hybrid dense/sparse search
 
 ```mermaid
 graph LR
-    subgraph RAGObservabilityMesh ["🔭 LANGFUSE OBSERVABILITY & TRACING MESH"]
+    subgraph RAGObservabilityMesh ["🔭 LANGFUSE OBSERVABILITY & TRACING MESH (LLM-as-a-Judge Evaluation)"]
         direction LR
 
         RIN["❓ Citizen Question"] --> RIG["🛡️ Input Guardrails\n(PII, Off-Topic, Jailbreak)"]
@@ -106,6 +106,7 @@ graph LR
             CONF --> GEN["Grounded Generator\n(Citation & Zero-Inference Enforcement)"]
         end
 
+        GEN --> JUDGE["⚖️ LLM-as-a-Judge Evaluation\n(Faithfulness & Hallucination Scoring)"]
         GEN --> ROG["🛡️ Output Guardrails\n(Toxicity Filter)"]
         ROG --> ROUT["💡 Final Answer &\nStatutory Sources"]
     end
