@@ -1,5 +1,7 @@
 <div align="center">
 
+![NyayaVaani UI Banner](./assets/ui.png)
+
 # ⚖️ NyayaVaani: Agentic AI Civic Assistant & Legal RAG Platform
 
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue?logo=python&logoColor=white)](https://www.python.org/)
